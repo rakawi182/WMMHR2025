@@ -10,6 +10,22 @@ High-precision **true-north compass** and **AR level** for the browser, powered 
 - Heading trim, roll/pitch zeroing and one-tap heading calibration against the Sun
 - Built-in self-test against the official NOAA WMMHR2025 test values (12/12)
 
+## New in v3.4 — Clinometer (AR LEVEL → CLINO)
+- Aim the box at a point: live elevation angle and grade (%). **MEASURE** averages 0.9 s of readings and rejects an unsteady hold (spread > 0.5°).
+- **Slots**: ANGLE (slope: angle, grade, 1:n, rise and slope length if a distance is entered), TOP and BASE (object height = d·(tan θtop − tan θbase); with TOP only, height = d·tan θtop + eye height). *d is the horizontal distance.*
+- **Two-face method**: measure, rotate the phone 180° about the viewing axis, aim at the same point and measure again. The average cancels the sensor/mounting offset and the half-difference is reported as the offset. Two-face readings use the raw pitch; single-face readings use pitch with your ZERO applied.
+- Height uncertainty shown is from reading spread only; distance error is usually larger (1 % in d = 1 % in height).
+- Service worker cache `wmmhr-compass-v8`.
+
+## New in v3.3 — Target coordinates: distance, bearing, radar
+- **Target card** (COMPASS tab): enter target coordinates as decimal (`-6.2088, 106.8456`, decimal comma also accepted) or DMS with hemisphere (`6°12′31″S 106°50′44″E`, `LS/BT` also accepted), or tap **MARK HERE** to store your current position. The target is saved on the device.
+- **Geodesic on WGS84** (Vincenty inverse, mm-level; verified against the Flinders Peak–Buninyong test line). Falls back to a spherical approximation only for near-antipodal pairs, and says so.
+- Shows distance, initial bearing in the shown north (TRUE / MAG / GRID), all three bearings, the turn relative to your current heading, and the **bearing uncertainty ≈ atan(GPS accuracy ÷ distance)**.
+- **Offline radar** (canvas, no map tiles): you at the centre, GPS-accuracy disc, range rings, dashed line to the target. Tap to switch north-up / heading-up.
+- **OPEN IN MAPS** hands the target to the installed maps app (`geo:` on Android).
+- The bearing feeds the existing **TARGET** marker in AR LEVEL (label adds the distance). Typing an azimuth by hand there overrides the coordinate target. Elevation is still typed manually.
+- Service worker cache `wmmhr-compass-v7`.
+
 ## New in v3.1
 - **Innovation check (works without the Magnetometer API)**: σ of the abs−rel yaw offset over 5 s (only while rotation < 20°/s) plus the instantaneous deviation. Levels WARN/ANOMALY (`INOV`, heuristic, tune from the log) cut the magnetic gain to 25 % / 5 %; the heading is then held by the gyro.
 - **Rate weighting**: magnetic correction weight (1 − ω/40)², zero above 40°/s; the offset is not initialised while rotating ≥ 20°/s (abs/rel timing skew of ~30 ms would otherwise bias it by ω·lag).

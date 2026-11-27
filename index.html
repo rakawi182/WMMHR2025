@@ -33,6 +33,12 @@ input:focus{border-color:var(--gold)}
 .card{background:var(--s1);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-top:8px;font-size:12.5px;color:var(--mut)}
 .card label{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--fg)}.card input{width:96px;padding:7px 9px}
 .ok{color:var(--ok)}.bad{color:var(--red)}
+#tg-in{flex:1;min-width:0;width:auto}.tgb{display:flex;gap:6px;margin-top:8px}.tgb button{padding:9px 4px;font-size:10.5px;border-radius:10px}.tgb button:disabled{opacity:.4}
+#clino{position:absolute;left:10px;right:10px;bottom:max(64px,calc(env(safe-area-inset-bottom) + 58px));max-height:55vh;overflow:auto;background:rgba(14,18,24,.94);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:12.5px;color:var(--mut);line-height:1.5}#clino[hidden]{display:none}
+#clino label{display:flex;align-items:center;gap:8px;margin:6px 0;color:var(--fg);flex-wrap:wrap}#clino input[type=number]{width:76px;padding:6px 8px}#clino button{padding:9px 6px;font-size:11px}
+.clh{display:flex;align-items:baseline;gap:12px;color:var(--fg)}.clh b{font-size:26px;font-weight:400}.clh span{color:var(--gold);font-weight:600}.clc{display:flex;gap:6px;margin:8px 0 6px}.clc button.on{background:#1d2431;color:var(--gold);border-color:var(--gold)}
+#tg-cv{width:100%;aspect-ratio:1/1;display:block;margin-top:8px;border-radius:12px;background:#0b0d12;touch-action:manipulation}
+.tgm{margin-top:8px}.tgm .m b{font-size:14px}
 
 .tabs{display:flex;gap:4px;background:var(--s1);border:1px solid var(--line);border-radius:12px;padding:3px;margin:8px 0 4px}
 .tabs button{border:0;background:none;padding:8px 6px;border-radius:9px;font-size:11.5px;letter-spacing:.16em;color:var(--mut)}.tabs button.on{background:#1d2431;color:var(--gold)}
@@ -82,6 +88,16 @@ input:focus{border-color:var(--gold)}
 <label><input id="swon" type="checkbox" style="width:auto" checked> Use swing correction (replaces trim)</label>
 <div id="fst" style="margin-top:6px;line-height:1.5">—</div></section>
 <section class="card"><div class="row"><button id="lg">LOG: START</button><button id="lgx">EXPORT LOG</button><button id="lgc">CLEAR LOG</button></div><div id="lgi" style="margin-top:6px">—</div></section>
+<section class="card" id="tgc"><div style="color:var(--fg);font-weight:600;letter-spacing:.12em;font-size:11px">TARGET · BEARING &amp; DISTANCE</div>
+<label style="margin-top:6px"><input id="tg-in" type="text" inputmode="text" autocomplete="off" placeholder="-6.2088, 106.8456  or  6°12′31″S 106°50′44″E"> <button id="tg-set" style="flex:none;padding:7px 12px">Set</button></label>
+<div class="tgb"><button id="tg-here">MARK HERE</button><button id="tg-map" disabled>OPEN IN MAPS</button><button id="tg-clr" disabled>CLEAR</button></div>
+<canvas id="tg-cv"></canvas>
+<section class="grid tgm"><div class="m"><small>Distance</small><b id="tg-d">—</b></div><div class="m"><small>Bearing (shown)</small><b id="tg-b" style="color:var(--gold)">—</b></div>
+<div class="m"><small>True</small><b id="tg-t">—</b></div><div class="m"><small>Magnetic</small><b id="tg-m">—</b></div>
+<div class="m"><small>Grid</small><b id="tg-g">—</b></div><div class="m"><small>Relative to heading</small><b id="tg-r">—</b></div>
+<div class="m" style="grid-column:span 2"><small>Bearing uncertainty (GPS ÷ distance)</small><b id="tg-s">—</b></div></section>
+<div id="tg-i" style="margin-top:6px;line-height:1.5">—</div>
+<div style="margin-top:4px">The bearing also drives the TARGET marker in AR LEVEL (overrides the typed azimuth). Elevation stays as typed there.</div></section>
 <section class="card"><label>Manual position <input id="mlat" placeholder="Latitude"> <input id="mlon" placeholder="Longitude"> <button id="mset" style="flex:none;padding:7px 12px">Set</button></label></section>
 <section class="card" id="status">—</section>
 <div id="ar" hidden>
@@ -103,7 +119,13 @@ input:focus{border-color:var(--gold)}
 <div style="margin-top:6px">Swing: sight the Sun (or a target whose true bearing you entered above) with the phone pointing in different headings, hold steady, tap ADD. Spread points around 360°. Calibrate in the pose you will use and redo after toggling gyro fusion.</div>
 <div style="margin-top:8px">Zero: hold the phone against a known plumb/level reference first. Sun calibration: centre the Sun inside the box on screen, then tap. Never look at the Sun directly.</div>
 </div>
-<div class="arbot"><button id="a-cap">CAPTURE</button><button id="a-gal">GALLERY</button><button id="a-gear">SETTINGS</button></div>
+<div id="clino" hidden><div class="clh"><b id="cl-live">—</b><span id="cl-grade"></span><small style="margin-left:auto;letter-spacing:.14em">CLINOMETER</small></div>
+<div class="clc"><button data-s="ang" class="on">ANGLE</button><button data-s="top">TOP</button><button data-s="base">BASE</button><button id="cl-go" class="pri" style="flex:1.4;background:var(--gold);border-color:var(--gold);color:#14110a">MEASURE</button></div>
+<label><input id="cl-2f" type="checkbox" checked style="width:auto"> Two-face (average with phone rotated 180°)</label>
+<label>Distance <input id="cl-d" type="number" step="0.1" min="0" placeholder="m"> Eye height <input id="cl-e" type="number" step="0.01" min="0" value="1.5"></label>
+<div id="cl-res" style="margin-top:4px"></div>
+<div class="r2" style="display:flex;gap:8px;margin-top:8px"><button id="cl-clr">CLEAR</button><button id="cl-close">CLOSE</button></div></div>
+<div class="arbot"><button id="a-cap">CAPTURE</button><button id="a-gal">GALLERY</button><button id="a-clino">CLINO</button><button id="a-gear">SETTINGS</button></div>
 </div>
 <div id="gal" hidden><div class="gh"><b>GALLERY</b><span id="gal-n"></span><div class="gb"><button id="gal-csv">CSV</button><button id="gal-geo">GEOJSON</button><button id="gal-kml">KML</button><button id="gal-x">CLOSE</button></div></div><div id="gal-list"></div></div>
 <div id="toast" hidden></div>
@@ -9351,8 +9373,8 @@ const sg=(v,d)=>(v>=0?'+':'−')+Math.abs(v).toFixed(d)+'°';
 let mag=null,dec=null,fl=null,loc=null,yr=0;
 function frame(t){requestAnimationFrame(frame);if(lastFt){const dt=t-lastFt;if(dt>0)fpsE+=.05*(1000/dt-fpsE)}lastFt=t;loc=pos||man;fl=null;
 if(loc){yr=decYear(new Date());const key=loc.lat.toFixed(4)+loc.lon.toFixed(4)+loc.alt.toFixed(2)+Math.floor(yr*1e5);if(key!=ck){ck=key;cf=WMM.field(loc.lat,loc.lon,loc.alt,yr);const a1=WMM.field(loc.lat,loc.lon,loc.alt,yr-.5),a2=WMM.field(loc.lat,loc.lon,loc.alt,yr+.5);dDdt=((a2.D-a1.D+540)%360-180)*60;const gv=gridConv(loc.lat,loc.lon);gc=gv?gv.g:null;gz=gv?gv.z:'—'}fl=cf}
-dec=fl?fl.D:null;sig=fl?Math.sqrt(.0625+Math.pow(5205/fl.H,2)):null;
-if(q){mag=magHeading(q);let hd=mag+modeOff();hd=((hd+hcorr(mag))%360+360)%360;if(logOn)logRow(t,hd);if(!arOn){
+dec=fl?fl.D:null;if(typeof tgtSync==='function')tgtSync();sig=fl?Math.sqrt(.0625+Math.pow(5205/fl.H,2)):null;
+if(q){mag=magHeading(q);let hd=mag+modeOff();hd=((hd+hcorr(mag))%360+360)%360;lastHd=hd;if(logOn)logRow(t,hd);if(!arOn){
  $('hd').firstChild.nodeValue=hd.toFixed(1);$('dir').textContent=W[Math.round(hd/22.5)%16];
  $('dial').setAttribute('transform',`rotate(${(-hd).toFixed(2)})`);
  if(Math.abs(hd-lastTape)>.02){lastTape=hd;tape(hd)}
@@ -9368,10 +9390,170 @@ if(t-lastUi>(arOn?1000:250)){lastUi=t;if(arOn)$('w-info').innerHTML=swInfo();els
  let s=`Sensor: <b style="color:var(--fg)">${src}${fuseAct()?' + RelativeOrientationSensor':''}</b>`+(q?` · ${useBack?'upright':'flat'} mode`:'')+'<br>'+$('status').dataset.t;
  if(loc&&yr>=2025&&yr<2030)s+='<br>Model valid for '+(2030-yr).toFixed(1)+' more years (until 2030.0)';if(!window.isSecureContext)s+='<br><b class="bad">Not a secure context — sensors/GPS may be blocked. Serve over HTTPS.</b>';
  if(loc&&(yr<2025||yr>=2030))s+='<br><b class="bad">Outside the WMMHR2025 validity period (2025–2030).</b>';
- $('status').innerHTML=s;$('fst').innerHTML=fusStat();$('lgi').textContent=logInfo();$('w-info').innerHTML=swInfo();renderAlerts()}}if(arOn)arDraw()}
+ $('status').innerHTML=s;$('fst').innerHTML=fusStat();$('lgi').textContent=logInfo();$('w-info').innerHTML=swInfo();renderAlerts();tgtUi()}}if(arOn)arDraw();else if(typeof radDraw==='function')radDraw(t)}
+
+/* ===== v3.3: geodesic (WGS84 Vincenty inverse), coordinate parser ===== */
+const GEO={a:6378137,f:1/298.257223563,
+inv(lat1,lon1,lat2,lon2){const D=Math.PI/180,a=this.a,f=this.f,b=a*(1-f);
+ let L=((lon2-lon1+540)%360-180)*D;
+ const U1=Math.atan((1-f)*Math.tan(lat1*D)),U2=Math.atan((1-f)*Math.tan(lat2*D)),sU1=Math.sin(U1),cU1=Math.cos(U1),sU2=Math.sin(U2),cU2=Math.cos(U2);
+ let lam=L,it=0,sS,cS,sig,sA,c2A,c2SM,lp;
+ do{const sl=Math.sin(lam),cl=Math.cos(lam);sS=Math.hypot(cU2*sl,cU1*sU2-sU1*cU2*cl);
+  if(sS===0)return{s:0,az1:null,az2:null,ok:true};
+  cS=sU1*sU2+cU1*cU2*cl;sig=Math.atan2(sS,cS);sA=cU1*cU2*sl/sS;c2A=1-sA*sA;c2SM=c2A!==0?cS-2*sU1*sU2/c2A:0;
+  const C=f/16*c2A*(4+f*(4-3*c2A));lp=lam;
+  lam=L+(1-C)*f*sA*(sig+C*sS*(c2SM+C*cS*(-1+2*c2SM*c2SM)));
+ }while(Math.abs(lam-lp)>1e-12&&++it<200);
+ if(it>=200||!isFinite(lam))return this.sph(lat1,lon1,lat2,lon2);
+ const u2=c2A*(a*a-b*b)/(b*b),A=1+u2/16384*(4096+u2*(-768+u2*(320-175*u2))),B=u2/1024*(256+u2*(-128+u2*(74-47*u2))),
+ dS=B*sS*(c2SM+B/4*(cS*(-1+2*c2SM*c2SM)-B/6*c2SM*(-3+4*sS*sS)*(-3+4*c2SM*c2SM))),s=b*A*(sig-dS),
+ sl=Math.sin(lam),cl=Math.cos(lam),
+ az1=Math.atan2(cU2*sl,cU1*sU2-sU1*cU2*cl),az2=Math.atan2(cU1*sl,-sU1*cU2+cU1*sU2*cl);
+ return{s,az1:(az1/D+360)%360,az2:(az2/D+360)%360,ok:true}},
+sph(lat1,lon1,lat2,lon2){const D=Math.PI/180,R=6371008.8,p1=lat1*D,p2=lat2*D,dl=(lon2-lon1)*D,dp=p2-p1,
+ h=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2,s=2*R*Math.asin(Math.min(1,Math.sqrt(h))),
+ az1=Math.atan2(Math.sin(dl)*Math.cos(p2),Math.cos(p1)*Math.sin(p2)-Math.sin(p1)*Math.cos(p2)*Math.cos(dl));
+ return{s,az1:(az1/D+360)%360,az2:null,ok:false}}};
+function parseDeg(str){str=String(str).trim();if(!str)return NaN;let sg=1;if(/[SWsw]\s*$|^\s*[SWsw]/.test(str))sg=-1;
+ const n=str.replace(/−/g,'-').match(/-?\d+(?:[.,]\d+)?/g);if(!n)return NaN;
+ const v=n.map(x=>parseFloat(x.replace(',','.')));if(n[0].startsWith('-'))sg=-1;if(v.length>3||(v[1]!=null&&(v[1]<0||v[1]>=60))||(v[2]!=null&&(v[2]<0||v[2]>=60)))return NaN;
+ return sg*(Math.abs(v[0])+(v[1]||0)/60+(v[2]||0)/3600)}
+function parseLL(s){s=String(s).trim();if(!s)return null;
+ s=s.replace(/\bLU\b/gi,'N').replace(/\bLS\b/gi,'S').replace(/\bBT\b/gi,'E').replace(/\bBB\b/gi,'W').replace(/\bT\b/g,'E').replace(/\bU\b/g,'N').replace(/\bB\b/g,'W');
+ let la,lo,m=s.match(/^(.*?[NS])[\s,;\/]*(.*?[EW])$/i)||s.match(/^([NS]\s*[^NSEW]*?)[\s,;\/]*([EW]\s*[^NSEW]*)$/i);
+ if(m){la=parseDeg(m[1]);lo=parseDeg(m[2])}
+ else{let p;if(s.includes(';'))p=s.split(';');else if(/,\s/.test(s)||(s.split(',').length==2&&s.includes('.')))p=s.split(',');else p=s.split(/[\s\/]+/);
+  p=p.map(x=>x.trim()).filter(Boolean);if(p.length!=2)return null;la=parseDeg(p[0]);lo=parseDeg(p[1])}
+ if(!isFinite(la)||!isFinite(lo)||Math.abs(la)>90||Math.abs(lo)>180)return null;return{lat:la,lon:lo}}
+if(typeof module!=='undefined')module.exports={GEO,parseLL,parseDeg};
 
 /* ===== AR LEVEL ===== */
 const ar=$('ar'),vid=$('vid'),cv=$('cv'),cx=cv.getContext('2d'),am=$('a-msg');let arOn=false,stream=null,fov=67,lt=0,rOff=0,pOff=0,tAz=null,tEl=0,showSun=true,cur=null;
+/* ===== v3.3: target coordinates -> distance, bearing, radar ===== */
+let tLL=null,tgtG=null,tgtK='',tgtD=null,tgtBt=null,radHU=false,lastRad=0,lastHd=null;
+try{tLL=JSON.parse(localStorage.getItem('tgt'));if(!tLL||!isFinite(tLL.lat)||!isFinite(tLL.lon))tLL=null;radHU=localStorage.getItem('radHU')=='1'}catch(e){}
+const nrm360=x=>((x%360)+360)%360;
+const fmtD=m=>m==null?'—':m<100?m.toFixed(1)+' m':m<1000?Math.round(m)+' m':m<10000?(m/1000).toFixed(3)+' km':m<100000?(m/1000).toFixed(2)+' km':Math.round(m/1000).toLocaleString('en-US')+' km';
+const fmtB=v=>v==null?'—':nrm360(v).toFixed(1)+'°';
+function saveT(){try{tLL?localStorage.setItem('tgt',JSON.stringify(tLL)):localStorage.removeItem('tgt')}catch(e){}}
+// geodesic + AR marker bearing in the currently shown north (TRUE/MAG/GRID); called every frame
+function tgtSync(){
+ if(!tLL||!loc){tgtG=null;tgtD=null;tgtBt=null;if(tLL)tAz=null;return}
+ const k=loc.lat+','+loc.lon+','+tLL.lat+','+tLL.lon;if(k!==tgtK){tgtK=k;tgtG=GEO.inv(loc.lat,loc.lon,tLL.lat,tLL.lon)}
+ tgtD=tgtG.s;tgtBt=tgtG.az1;
+ if(tgtBt==null){tAz=null;return}
+ tAz=nrm360(tgtBt-(dec!=null?dec-modeOff():0));
+ const e=$('s-ta');if(e&&document.activeElement!==e){const v=tAz.toFixed(1);if(e.value!==v)e.value=v}
+}
+function tgtUi(){
+ const has=!!tLL;$('tg-clr').disabled=$('tg-map').disabled=!has;
+ let st;
+ if(!has)st='No target set. Enter coordinates (decimal or DMS) or mark your current position.';
+ else if(!loc)st='Waiting for your position (GPS or manual)…';
+ else if(tgtD===0||tgtBt==null)st='You are at the target.';
+ else st=(tgtG.ok?'WGS84 ellipsoid (Vincenty)':'<b class="bad">Near-antipodal: spherical approximation</b>');
+ let sig=null;if(has&&loc&&pos&&tgtD>0)sig=Math.atan(pos.acc/tgtD)/DEG;
+ const sh=tgtBt==null||dec==null&&modeI!=1?null:tgtBt-(dec!=null?dec-modeOff():0);
+ $('tg-d').textContent=fmtD(tgtD);
+ $('tg-b').textContent=tgtBt==null?'—':fmtB(sh)+' '+modeNm();
+ $('tg-t').textContent=fmtB(tgtBt);
+ $('tg-m').textContent=tgtBt==null||dec==null?'—':fmtB(tgtBt-dec);
+ $('tg-g').textContent=tgtBt==null||gc==null?'—':fmtB(tgtBt-gc);
+ let rel='—';if(tgtBt!=null&&lastHd!=null&&sh!=null){const r=((sh-lastHd+540)%360)-180;rel=Math.abs(r)<.5?'ahead':(r>0?'turn right ':'turn left ')+Math.abs(r).toFixed(0)+'°'}
+ $('tg-r').textContent=rel;
+ $('tg-s').textContent=sig==null?(pos||!has?'—':'manual pos.'):sig>=45?'±>45° (too close)':'±'+(sig<10?sig.toFixed(1):Math.round(sig))+'°';
+ $('tg-i').innerHTML=st;
+}
+function tgtSet(ll){tLL=ll;tgtK='';saveT();tgtSync();tgtUi();radDraw(performance.now(),true)}
+$('tg-set').onclick=()=>{const p=parseLL($('tg-in').value);if(!p){toast('Not recognised. Example: -6.2088, 106.8456');return}tgtSet(p);$('tg-in').value=p.lat.toFixed(6)+', '+p.lon.toFixed(6);toast('Target set')};
+$('tg-in').addEventListener('keydown',e=>{if(e.key==='Enter')$('tg-set').click()});
+$('tg-here').onclick=()=>{if(!loc){toast('Waiting for your position first');return}tgtSet({lat:loc.lat,lon:loc.lon});$('tg-in').value=loc.lat.toFixed(6)+', '+loc.lon.toFixed(6);toast('Current position marked as target')};
+$('tg-clr').onclick=()=>{tLL=null;tAz=null;tgtD=tgtBt=null;tgtG=null;$('tg-in').value='';$('s-ta').value='';saveT();tgtUi();radDraw(performance.now(),true)};
+$('tg-map').onclick=()=>{if(!tLL)return;const a=tLL.lat.toFixed(6),o=tLL.lon.toFixed(6);
+ location.href=/Android/i.test(navigator.userAgent)?`geo:${a},${o}?q=${a},${o}(Target)`:/iPhone|iPad/i.test(navigator.userAgent)?`https://maps.apple.com/?ll=${a},${o}&q=Target`:`https://www.openstreetmap.org/?mlat=${a}&mlon=${o}#map=15/${a}/${o}`};
+if(tLL)$('tg-in').value=tLL.lat.toFixed(6)+', '+tLL.lon.toFixed(6);
+// typing an azimuth by hand overrides the coordinate target
+$('s-ta').addEventListener('change',()=>{if(tLL){tLL=null;tgtG=null;tgtD=tgtBt=null;saveT();$('tg-in').value='';tgtUi()}});
+// radar (canvas, no tiles, fully offline)
+const rcv=$('tg-cv'),rcx=rcv.getContext('2d');
+rcv.onclick=()=>{radHU=!radHU;try{localStorage.setItem('radHU',radHU?1:0)}catch(e){}radDraw(performance.now(),true)};
+function niceR(x){if(!(x>0))return 100;const p=Math.pow(10,Math.floor(Math.log10(x))),m=x/p;return(m<=1?1:m<=2?2:m<=5?5:10)*p}
+function radDraw(t,force){
+ if(arOn||!force&&t-lastRad<66)return;lastRad=t;
+ const cs=rcv.clientWidth;if(!cs)return;const dpr=window.devicePixelRatio||1;if(rcv.width!==Math.round(cs*dpr)){rcv.width=rcv.height=Math.round(cs*dpr)}
+ const c=rcx;c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,cs,cs);const cx0=cs/2,R=cs/2-22;
+ const hd=lastHd,up=radHU&&hd!=null?hd:0; // screen angle of a bearing b = (b-up) clockwise from top
+ const P=(b,r)=>{const a=(b-up)*DEG;return[cx0+Math.sin(a)*r,cx0-Math.cos(a)*r]};
+ let Rm=tgtD>0?niceR(tgtD*1.15):100;
+ c.font='10.5px system-ui,sans-serif';c.textBaseline='middle';c.textAlign='center';
+ c.fillStyle='#0e1218';c.beginPath();c.arc(cx0,cx0,R,0,7);c.fill();
+ for(let i=1;i<=4;i++){c.strokeStyle=i==4?'#2a3342':'#1c2430';c.lineWidth=1;c.beginPath();c.arc(cx0,cx0,R*i/4,0,7);c.stroke()}
+ c.strokeStyle='#1c2430';c.beginPath();for(const b of[0,90,180,270]){const p=P(b,R);c.moveTo(cx0,cx0);c.lineTo(p[0],p[1])}c.stroke();
+ c.fillStyle='#5d6676';c.textAlign='left';for(let i=1;i<=4;i++){const m=Rm*i/4;if(i%2==0||i==4)c.fillText(fmtD(m).replace(/\.0+ /,' '),cx0+4,cx0-R*i/4+8)}
+ c.textAlign='center';[['N',0],['E',90],['S',180],['W',270]].forEach(([l,b])=>{const p=P(b,R+11);c.fillStyle=b==0?'#e2625d':'#8d97a8';c.font=(b==0?'600 ':'')+'11px system-ui,sans-serif';c.fillText(l,p[0],p[1])});
+ c.font='10.5px system-ui,sans-serif';
+ // GPS accuracy disc
+ if(pos&&pos.acc>0){const ar=pos.acc/Rm*R;if(ar>3){c.fillStyle='rgba(201,164,92,.10)';c.strokeStyle='rgba(201,164,92,.35)';c.beginPath();c.arc(cx0,cx0,Math.min(ar,R),0,7);c.fill();c.stroke()}}
+ // target
+ if(tLL&&loc&&tgtD>0&&tgtBt!=null){const sh=tgtBt-(dec!=null?dec-modeOff():0),r=Math.min(R,tgtD/Rm*R),p=P(sh,r);
+  c.strokeStyle='#59b7f0';c.lineWidth=1.5;c.setLineDash([5,4]);c.beginPath();c.moveTo(cx0,cx0);c.lineTo(p[0],p[1]);c.stroke();c.setLineDash([]);
+  c.fillStyle='#59b7f0';c.beginPath();c.arc(p[0],p[1],5,0,7);c.fill();c.strokeStyle='#59b7f0';c.beginPath();c.arc(p[0],p[1],9,0,7);c.stroke();
+  const tl=fmtD(tgtD)+' · '+fmtB(sh),tx=p[0]<cs*.6?p[0]+14:p[0]-14;c.textAlign=p[0]<cs*.6?'left':'right';c.fillStyle='#cfe8fa';c.fillText(tl,tx,p[1]<24?p[1]+16:p[1]-14)}
+ else if(tLL&&loc&&tgtD===0){c.fillStyle='#59b7f0';c.textAlign='center';c.fillText('at target',cx0,cx0+22)}
+ // you + heading
+ if(hd!=null){const a=P(hd,R*.28),l=P(hd-18,R*.1),r2=P(hd+18,R*.1);c.fillStyle='rgba(201,164,92,.9)';c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(l[0],l[1]);c.lineTo(cx0,cx0);c.lineTo(r2[0],r2[1]);c.closePath();c.fill()}
+ c.fillStyle='#fff';c.beginPath();c.arc(cx0,cx0,3.2,0,7);c.fill();
+ c.fillStyle='#5d6676';c.textAlign='left';c.textBaseline='alphabetic';c.fillText((radHU?'HEADING-UP':'NORTH-UP')+' · '+modeNm()+' N · tap to switch',6,cs-6);c.textBaseline='middle';
+ if(!tLL){c.fillStyle='#7d8798';c.textAlign='center';c.fillText('Set a target to see it here',cx0,cx0+R*.55)}
+}
+
+/* ===== v3.4: clinometer (angle, grade, object height; two-face method) ===== */
+let clinoOn=false,clSlot='ang',clS=null,clPend=null,clV={ang:null,top:null,base:null},clLive=0,clMsg='';
+const clA=v=>(v>=0?'+':'−')+Math.abs(v).toFixed(2)+'°';
+const clG=v=>{const g=Math.tan(v*DEG)*100;return Math.abs(v)>84?'—':(g>=0?'+':'−')+Math.abs(g).toFixed(1)+' %'};
+const clMean=a=>a.reduce((s,x)=>s+x,0)/a.length;
+function clStart(){if(!q||!cur){toast('Orientation sensor not ready');return}
+ const face=clPend&&clPend.slot===clSlot?2:1;if(clPend&&clPend.slot!==clSlot)clPend=null;
+ clS={slot:clSlot,face,t0:performance.now(),raw:[],pr:[]};clMsg=''}
+function clFinish(){const s=clS;clS=null;const sp=Math.max(...s.raw)-Math.min(...s.raw),raw=clMean(s.raw),prm=clMean(s.pr),two=$('cl-2f').checked;
+ if(sp>.5){clMsg='Not steady (spread '+sp.toFixed(2)+'°) — brace the phone and measure again.';clRender();return}
+ if(!two){clV[s.slot]={v:prm,sp,n:1};clPend=null;clMsg=''}
+ else if(s.face==1){clPend={slot:s.slot,A:raw,sp};clMsg='Face A saved ('+clA(raw)+'). Now rotate the phone 180° about the viewing axis (upside-down), aim at the SAME point and tap MEASURE again.'}
+ else{const A=clPend.A,off=(A-raw)/2;clV[s.slot]={v:(A+raw)/2,sp:Math.max(sp,clPend.sp),n:2,off};clPend=null;
+  clMsg=Math.abs(off)>3?'Faces differ by '+(2*Math.abs(off)).toFixed(1)+'° — check that you aimed at the same point.':'Sensor offset removed: '+clA(off)+'.'}
+ clRender()}
+function clRender(){
+ const d=parseFloat($('cl-d').value),eye=parseFloat($('cl-e').value)||0,hasD=isFinite(d)&&d>0,L=[];
+ const nm={ang:'ANGLE',top:'TOP',base:'BASE'};
+ for(const k of['ang','top','base'])if(clV[k])L.push('<b style="color:var(--fg)">'+nm[k]+'</b> '+clA(clV[k].v)+' · '+clG(clV[k].v)+(clV[k].n==2?' <span class="ok">2-face</span>':'')+' <span>(spread '+clV[k].sp.toFixed(2)+'°)</span>');
+ const a=clV.ang;
+ if(a){const t=Math.tan(a.v*DEG);L.push('Slope 1:'+(Math.abs(t)>1e-4?(1/Math.abs(t)).toFixed(1):'∞')+(hasD?' · rise '+(d*t).toFixed(2)+' m over '+d+' m · slope length '+(d/Math.cos(a.v*DEG)).toFixed(2)+' m':''))}
+ const T=clV.top,B=clV.base;let h=null,dh=null;
+ if(T&&B&&hasD){h=d*(Math.tan(T.v*DEG)-Math.tan(B.v*DEG));dh=d*DEG/2*(T.sp/Math.pow(Math.cos(T.v*DEG),2)+B.sp/Math.pow(Math.cos(B.v*DEG),2));if(T.v<=B.v)L.push('<span class="bad">TOP must be above BASE.</span>')}
+ else if(T&&hasD){h=d*Math.tan(T.v*DEG)+eye;dh=d*DEG/2*T.sp/Math.pow(Math.cos(T.v*DEG),2);}
+ if(h!=null)L.push('<b style="color:var(--gold);font-size:15px">HEIGHT '+h.toFixed(2)+' m</b> <span>±'+dh.toFixed(2)+' m reading spread'+(B?'':' · includes eye height '+eye+' m')+'</span>');
+ else if((T||B)&&!hasD)L.push('Enter the horizontal distance to the object for height.');
+ else if(B&&!T)L.push('Now measure TOP (and keep BASE) for the height.');
+ if(clMsg)L.push('<span style="color:var(--fg)">'+clMsg+'</span>');
+ $('cl-res').innerHTML=L.join('<br>')||'Aim the box at the point, hold steady, tap MEASURE.'}
+// called from arDraw every frame
+function clinoFrame(pitch,pr,cxm,cym,bs){if(!clinoOn)return;const now=performance.now();
+ if(clS){clS.raw.push(pitch);clS.pr.push(pr);const el=now-clS.t0;if(el>=900&&clS.raw.length>=8||el>2500)clFinish()}
+ const txt=clS?'HOLD STEADY… '+Math.max(0,(.9-(now-clS.t0)/1000)).toFixed(1)+'s':'ELEV '+clA(pr)+'  ·  '+clG(pr);
+ cx.font='600 14px system-ui,sans-serif';cx.textAlign='center';cx.textBaseline='middle';const w=cx.measureText(txt).width+22,y=cym-bs-26;
+ cx.fillStyle='rgba(11,13,18,.7)';cx.beginPath();cx[cx.roundRect?'roundRect':'rect'](cxm-w/2,y-13,w,26,13);cx.fill();cx.fillStyle=clS?'#e0b04a':'#fff';cx.fillText(txt,cxm,y);cx.font='11px system-ui,sans-serif';
+ if(now-clLive>120){clLive=now;$('cl-live').textContent=clA(pr);$('cl-grade').textContent=clG(pr)}}
+$('a-clino').onclick=()=>{clinoOn=$('clino').hidden;$('clino').hidden=!clinoOn;if(clinoOn){$('sheet').hidden=true;clRender()}else clS=null};
+$('cl-close').onclick=()=>{$('clino').hidden=true;clinoOn=false;clS=null};
+$('a-gear').addEventListener('click',()=>{if(!$('sheet').hidden){$('clino').hidden=true;clinoOn=false;clS=null}});
+document.querySelectorAll('#clino .clc button').forEach(b=>b.onclick=()=>{clSlot=b.dataset.s;document.querySelectorAll('#clino .clc button').forEach(x=>x.classList.toggle('on',x===b));if(clPend&&clPend.slot!==clSlot){clPend=null;clMsg=''}clRender()});
+$('cl-go').onclick=clStart;
+$('cl-clr').onclick=()=>{clV={ang:null,top:null,base:null};clPend=null;clS=null;clMsg='';clRender()};
+['cl-d','cl-e'].forEach(i=>{const e=$(i);try{const v=localStorage.getItem(i);if(v!=null)e.value=v}catch(x){}e.addEventListener('input',()=>{try{localStorage.setItem(i,e.value)}catch(x){}clRender()})});
+try{const v=localStorage.getItem('cl-2f');if(v!=null)$('cl-2f').checked=v=='1'}catch(e){}
+$('cl-2f').onchange=()=>{try{localStorage.setItem('cl-2f',$('cl-2f').checked?1:0)}catch(e){}clPend=null;clMsg='';clRender()};
+clRender();
+
 const camHdg=()=>{const[x,y,z,w]=q;return(Math.atan2(-2*(x*z+y*w),-2*(y*z-x*w))/DEG+360)%360}; // v3.2: same as arDraw hdgC, from the latest q
 const D=Math.PI/180,ld=(k,d)=>{try{const v=parseFloat(localStorage.getItem(k));return isFinite(v)?v:d}catch(e){return d}},sv=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
 fov=ld('fov',67);rOff=ld('rOff',0);pOff=ld('pOff',0);$('s-fov').value=fov;$('s-fovv').textContent=fov+'°';
@@ -9538,7 +9720,7 @@ const mk=(lb,az,el,c)=>{const aa=(az-off)*D,e=el*D,d=[Math.sin(aa)*Math.cos(e),M
  else{const L=Math.hypot(cr,cu)||1,R=Math.min(W,H)/2-34,ex=cxm+cr/L*R,ey=cym-cu/L*R,th=Math.atan2(-cu,cr);cx.save();cx.translate(ex,ey);cx.rotate(th);cx.beginPath();cx.moveTo(12,0);cx.lineTo(-8,-8);cx.lineTo(-8,8);cx.closePath();cx.fill();cx.restore();
   cx.textAlign='center';cx.fillText(lb+' '+sep.toFixed(0)+'°',ex-cr/L*30,ey+cu/L*30)}};
 if(showSun&&loc){const s=sunPos(new Date(),loc.lat,loc.lon);if(s.el>-5)mk('SUN',(((s.az-(dec!=null?dec-modeOff():0))%360)+360)%360,s.el,'#f2d04d')}
-if(tAz!=null)mk('TARGET',((tAz%360)+360)%360,tEl,'#59b7f0');
+if(tAz!=null)mk('TARGET'+(tLL&&tgtD!=null?' '+fmtD(tgtD):''),((tAz%360)+360)%360,tEl,'#59b7f0');
 // target box
 const bs=34;cx.strokeStyle=col;cx.lineWidth=2.2;for(const[sx,sy]of[[-1,-1],[1,-1],[1,1],[-1,1]]){cx.beginPath();cx.moveTo(cxm+sx*bs,cym+sy*(bs-14));cx.lineTo(cxm+sx*bs,cym+sy*bs);cx.lineTo(cxm+sx*(bs-14),cym+sy*bs);cx.stroke()}
 cx.lineWidth=1;cx.beginPath();for(const[a1,b1,a2,b2]of[[-bs-14,0,-8,0],[8,0,bs+14,0],[0,-bs-14,0,-8],[0,8,0,bs+14]]){cx.moveTo(cxm+a1,cym+b1);cx.lineTo(cxm+a2,cym+b2)}cx.stroke();cx.fillStyle=col;cx.beginPath();cx.arc(cxm,cym,2,0,7);cx.fill();
@@ -9552,6 +9734,7 @@ for(let i=-12;i<=12;i++){const u=i/2,len=i%2==0?9:5;cx.lineWidth=i==0?2:1;cx.beg
  if(i%4==0&&i){cx.fillStyle='#aeb7c6';cx.fillText(Math.abs(u)+'',cxm+u*20,gy+10);cx.fillText(Math.abs(u)+'',gx+11,cym-u*20)}}
 cx.fillStyle=col;const gxp=cxm+Math.max(-6.4,Math.min(6.4,er))*20,gyp=cym-Math.max(-6.4,Math.min(6.4,ep))*20;
 cx.beginPath();cx.moveTo(gxp,gy+2);cx.lineTo(gxp-6,gy+12);cx.lineTo(gxp+6,gy+12);cx.fill();cx.beginPath();cx.moveTo(gx+2,gyp);cx.lineTo(gx+12,gyp-6);cx.lineTo(gx+12,gyp+6);cx.fill();
+clinoFrame(pitch,pr,cxm,cym,bs);
 // HTML readouts
 const sg2=v=>(v>=0?'+':'−')+Math.abs(v).toFixed(1)+'°';
 $('a-p').textContent=sg2(pr);$('a-r').textContent=sg2(rr);$('a-h').textContent=hdg.toFixed(1)+'°';$('a-hl').textContent=modeI==1?'HDG MAG':dec!=null?'HDG '+modeNm():'HDG MAG*';
