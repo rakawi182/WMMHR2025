@@ -9355,11 +9355,12 @@ function snapshot(){const d=new Date(),T=tstr(d),hc=cur.hdgC,tm=trim(),dc=dec;
  declDeg:r2(dc,3),inclDeg:fl?r2(fl.I,3):null,F_nT:fl?Math.round(fl.F):null,H_nT:fl?Math.round(fl.H):null,gridConvDeg:r2(gc,3),utmZone:loc?gz:null,
  pitchDeg:r2(cur.pitch+pOff,2),rollDeg:r2(cur.roll+rOff,2),trimDeg:tm,rollZero:r2(rOff,2),pitchZero:r2(pOff,2),fovDeg:fov,
  sigmaDeclModelDeg:r2(sig,3),headingStabilityDeg:r2(stab,3),sensor:src,kp:kpOk()?kp.kp:null}}
-function stamp(g,W,H,s){const T=tstr(new Date(s.utc)),sgn=(v,d)=>v==null?'—':(v>=0?'+':'−')+Math.abs(v).toFixed(d)+'°';
+function stamp(g,W,H,s){const T=tstr(new Date(s.utc)),hf=v=>v==null?'—':v.toFixed(1)+'°',mk=m=>s.mode==m?'*':'',sgn=(v,d)=>v==null?'—':(v>=0?'+':'−')+Math.abs(v).toFixed(d)+'°';
  const L=[['WMMHR COMPASS · '+s.model+' · epoch '+s.epochYear.toFixed(2),'#c9a45c'],
  [T.u+' UTC | '+T.l.slice(0,10).replace(/:/g,'-')+T.l.slice(10)+' (UTC'+s.tz+')'],
  [s.lat==null?'POSITION UNAVAILABLE':'LAT '+s.lat.toFixed(5)+'°  LON '+s.lon.toFixed(5)+'°  ALT '+(s.altM==null?'—':Math.round(s.altM)+' m')+'  ±'+(s.posSource=='gps'?Math.round(s.gpsAccM)+' m':'manual')],
- ['HDG '+s.mode+' '+s.hdgShown.toFixed(1)+'°  MAG '+s.hdgMag.toFixed(1)+'°  DEC '+sgn(s.declDeg,2)],
+ ['TRUE '+hf(s.hdgTrue)+mk('TRUE')+'  MAG '+hf(s.hdgMag)+mk('MAG')+'  GRID '+hf(s.hdgGrid)+mk('GRID')],
+ ['DEC '+sgn(s.declDeg,2)+'  CONV '+sgn(s.gridConvDeg,2)+'  UTM '+(s.utmZone||'—')+'  (* = shown)'],
  ['PITCH '+sgn(s.pitchDeg,1)+'  ROLL '+sgn(s.rollDeg,1)+'  σhdg '+(s.headingStabilityDeg==null?'—':s.headingStabilityDeg.toFixed(2)+'°')],
  ['σD(model) ±'+(s.sigmaDeclModelDeg==null?'—':s.sigmaDeclModelDeg.toFixed(2)+'°')+'  trim '+sgn(s.trimDeg,1)+'  FOV '+s.fovDeg+'°']];
  const F='ui-monospace,Menlo,Consolas,monospace';let fs=Math.round(W/40);const pad=fs*.7;g.font=fs+'px '+F;

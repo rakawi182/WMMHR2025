@@ -10,6 +10,8 @@ High-precision **true-north compass** and **AR level** for the browser, powered 
 - Heading trim, roll/pitch zeroing and one-tap heading calibration against the Sun
 - Built-in self-test against the official NOAA WMMHR2025 test values (12/12)
 
+## New in v2.1 (stamp always shows TRUE, MAG and GRID headings; * marks the mode shown)
+
 ## New in v2
 - **Stamped capture**: the AR photo is saved as JPEG at native camera resolution with a data band (UTC + local time, lat/lon/alt/GPS accuracy, true/magnetic/shown heading, declination, pitch, roll, heading stability, model error, trim, FOV).
 - **EXIF + metadata**: standard EXIF/GPS tags (incl. `GPSImgDirection` true/magnetic, GPS position and accuracy, UTC time) plus the full JSON in `UserComment`; SHA-256 of the JPEG kept in the gallery record.
