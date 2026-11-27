@@ -49,20 +49,32 @@ input:focus{border-color:var(--gold)}
 #sheet{position:absolute;left:10px;right:10px;bottom:max(64px,calc(env(safe-area-inset-bottom) + 58px));max-height:62vh;overflow:auto;background:rgba(14,18,24,.94);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px;padding:12px;font-size:12.5px;color:var(--mut)}
 #sheet[hidden]{display:none}#sheet label{display:flex;align-items:center;gap:8px;margin:7px 0;color:var(--fg);flex-wrap:wrap}#sheet input[type=number]{width:84px;padding:6px 8px}#sheet input[type=range]{flex:1;padding:0;accent-color:#c9a45c}
 #sheet .r2{display:flex;gap:8px;margin-top:8px}#sheet button{padding:9px 6px;font-size:11px}
+
+.al{font-size:12px;border:1px solid;border-radius:10px;padding:7px 10px;margin:6px 0;line-height:1.35}
+.al.bad{color:#ff8a85;border-color:#6b2a28;background:rgba(217,83,79,.1)}.al.warn{color:#e0b04a;border-color:#5b4a1f;background:rgba(224,176,74,.08)}
+#a-warn{font-size:10.5px}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:max(84px,calc(env(safe-area-inset-bottom) + 78px));z-index:60;max-width:90vw;background:rgba(14,18,24,.96);border:1px solid var(--gold);color:var(--fg);border-radius:12px;padding:9px 14px;font-size:12.5px;text-align:center}
+#toast[hidden]{display:none}
+#gal{position:fixed;inset:0;z-index:40;background:var(--bg);overflow:auto;padding:max(12px,env(safe-area-inset-top)) 14px max(16px,env(safe-area-inset-bottom))}#gal[hidden]{display:none}
+.gh{position:sticky;top:0;background:var(--bg);padding:6px 0 8px;z-index:2;font-size:13px;letter-spacing:.12em}.gh span{color:var(--mut);margin-left:8px;font-size:11.5px;letter-spacing:0}
+.gb{display:flex;gap:6px;margin-top:8px}.gb button{padding:7px 4px;font-size:10.5px;border-radius:9px}
+.gi{display:flex;gap:10px;background:var(--s1);border:1px solid var(--line);border-radius:12px;padding:8px;margin:8px 0;font-size:12px}
+.gi img{width:96px;height:128px;object-fit:cover;border-radius:8px;flex:none;background:#000}.gt{flex:1;min-width:0;line-height:1.5}
 </style></head><body>
 <header><div class="brand">WMMHR <i>COMPASS</i></div><div style="display:flex;gap:6px;align-items:center"><div class="chip" id="inst" hidden style="cursor:pointer;color:var(--gold);border-color:var(--gold)">INSTALL</div><div class="chip">WMMHR2025 · n=133</div></div></header>
 <nav class="tabs"><button data-t="c" class="on">COMPASS</button><button data-t="a">AR LEVEL</button></nav>
 <div class="readout"><div id="hd">---.-<span>°</span></div><div id="dir">—</div><div id="ref">Press Start to begin</div></div>
+<div id="alert"></div>
 <svg id="dialsvg" viewBox="-118 -118 236 236"><circle r="104" fill="#0e1218" stroke="#222a36"/><circle r="60" fill="none" stroke="#1a212b"/><g id="dial"></g>
 <path d="M0-101l-5.5-11h11z" fill="#c9a45c"/><circle r="2.5" fill="#c9a45c"/></svg>
 <svg id="tape" viewBox="0 0 300 44"><defs><linearGradient id="fg"><stop offset="0" stop-color="#000"/><stop offset=".22" stop-color="#fff"/><stop offset=".78" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>
 <mask id="mk"><rect width="300" height="44" fill="url(#fg)"/></mask></defs>
 <g id="tg" mask="url(#mk)"></g><line x1="150" x2="150" y1="0" y2="24" stroke="#c9a45c" stroke-width="1.6"/><path d="M150 27l-3.5 5h7z" fill="#c9a45c"/></svg>
-<div class="row"><button id="go" class="pri">START</button><button id="mode">TRUE NORTH</button></div>
+<div class="row"><button id="go" class="pri">START</button><button id="mode">TRUE NORTH</button><button id="gal-o">GALLERY</button></div>
 <section class="grid">
 <div class="m"><small>Magnetic heading</small><b id="m-mag">—</b></div><div class="m"><small>Declination</small><b id="m-dec">—</b></div>
 <div class="m"><small>Inclination</small><b id="m-inc">—</b></div><div class="m"><small>Total field</small><b id="m-f">—</b></div>
-<div class="m"><small>Position</small><b id="m-pos">—</b></div><div class="m"><small>GPS accuracy</small><b id="m-acc">—</b></div>
+<div class="m"><small>Position</small><b id="m-pos">—</b></div><div class="m"><small>GPS accuracy</small><b id="m-acc">—</b></div><div class="m"><small>Model error (D)</small><b id="m-sig">—</b></div><div class="m"><small>Heading stability</small><b id="m-stab">—</b></div><div class="m"><small>Decl. change</small><b id="m-sv">—</b></div><div class="m"><small>UTM zone</small><b id="m-utm">—</b></div><div class="m"><small>Grid convergence</small><b id="m-gc">—</b></div><div class="m"><small>Grid variation</small><b id="m-gv">—</b></div>
 </section>
 <section class="card"><label>Heading trim (°) <input id="trim" type="number" step="0.1" value="0"></label>
 <div style="margin-top:4px">Offset applied to the displayed heading. Use it to remove residual sensor error by aiming at a target of known true bearing.</div></section>
@@ -72,19 +84,21 @@ input:focus{border-color:var(--gold)}
 <video id="vid" playsinline muted autoplay></video><canvas id="cv"></canvas>
 <div class="artop"><nav class="tabs"><button data-t="c">COMPASS</button><button data-t="a" class="on">AR LEVEL</button></nav>
 <div class="rd"><div><small>PITCH</small><b id="a-p">—</b></div><div class="c"><small id="a-hl">HDG TRUE</small><b id="a-h">—</b></div><div><small>ROLL</small><b id="a-r">—</b></div></div>
-<div class="lv" id="a-lv">—</div></div>
+<div class="lv" id="a-lv">—</div><div class="lv" id="a-warn" hidden></div></div>
 <div id="a-msg"></div>
 <div id="sheet" hidden>
 <label>Camera FOV, long side <input id="s-fov" type="range" min="40" max="110" step="0.5"><b id="s-fovv" style="color:var(--fg)">67°</b></label>
 <label>Level target pitch (°) <input id="s-lt" type="number" step="0.1" value="0"></label>
 <label>Target bearing (°) <input id="s-ta" type="number" step="0.1" placeholder="az"> elev <input id="s-te" type="number" step="0.1" placeholder="el"></label>
-<label><input id="s-sun" type="checkbox" checked> Show Sun marker</label>
+<label><input id="s-sun" type="checkbox" checked> Show Sun marker</label><label><input id="s-auto" type="checkbox"> Auto-capture when level &amp; steady (1.2 s)</label><label><input id="s-dl" type="checkbox" checked> Also download the JPEG on capture</label>
 <div class="r2"><button id="s-zero">ZERO ROLL &amp; PITCH</button><button id="s-rz">RESET ZERO</button></div>
-<div class="r2"><button id="s-sc">CALIBRATE HEADING TO SUN</button></div>
+<div class="r2"><button id="s-sc">CALIBRATE HEADING TO SUN</button><button id="s-scr">RESET SUN CAL</button></div>
 <div style="margin-top:8px">Zero: hold the phone against a known plumb/level reference first. Sun calibration: centre the Sun inside the box on screen, then tap. Never look at the Sun directly.</div>
 </div>
-<div class="arbot"><button id="a-cap">CAPTURE</button><button id="a-gear">SETTINGS</button></div>
+<div class="arbot"><button id="a-cap">CAPTURE</button><button id="a-gal">GALLERY</button><button id="a-gear">SETTINGS</button></div>
 </div>
+<div id="gal" hidden><div class="gh"><b>GALLERY</b><span id="gal-n"></span><div class="gb"><button id="gal-csv">CSV</button><button id="gal-geo">GEOJSON</button><button id="gal-kml">KML</button><button id="gal-x">CLOSE</button></div></div><div id="gal-list"></div></div>
+<div id="toast" hidden></div>
 <script>
 const COF=`2025.0
 1 0 -29351.7976 0 11.9581
@@ -9183,7 +9197,7 @@ az=Math.atan2(-Math.sin(Hh),Math.tan(de)*Math.cos(lat*D)-Math.sin(lat*D)*Math.co
 if(e>-1)e+=1.02/Math.tan((e+10.3/(e+5.11))*D)/60;return{az:((az/D)%360+360)%360,el:e}}
 if(typeof document!=='undefined'){
 const $=id=>document.getElementById(id);
-let ck='',cf=null,q=null,pos=null,man=null,trueMode=true,src='—',run=false,lastUi=0,lastTape=-99;
+let ck='',cf=null,q=null,pos=null,man=null,modeI=0,dDdt=null,gc=null,gz='—',stab=null,sig=null,magF=null,src='—',run=false,lastUi=0,lastTape=-99;
 const f2=(r,x,y)=>`${(Math.sin(r)*x).toFixed(2)}`;
 let h='';
 for(let i=0;i<720;i++){const a=i/2,r=a*Math.PI/180,sn=Math.sin(r),cs=-Math.cos(r);let l,c;
@@ -9202,7 +9216,36 @@ const st=selfTest();$('status').dataset.t=st.bad?`<b class="bad">WMMHR2025 self-
 try{$('trim').value=localStorage.getItem('trim')||0}catch(e){}
 const trim=()=>parseFloat($('trim').value)||0;
 $('trim').onchange=()=>{try{localStorage.setItem('trim',trim())}catch(e){}};
-$('mode').onclick=()=>{trueMode=!trueMode;$('mode').textContent=trueMode?'TRUE NORTH':'MAGNETIC NORTH'};
+/* ===== v2: modes (true/magnetic/grid), alerts, stability, Kp ===== */
+const DEG=Math.PI/180;
+const modeNm=()=>['TRUE','MAG','GRID'][modeI];
+const modeOff=()=>dec==null?0:modeI==0?dec:modeI==1?0:dec-(gc||0);
+function gridConv(lat,lon){if(Math.abs(lat)>84||lat<-80)return null;const z=Math.floor((lon+180)/6)%60+1,l0=(z-1)*6-180+3,dl=((lon-l0+540)%360)-180,
+ b='CDEFGHJKLMNPQRSTUVWX'[Math.min(19,Math.floor((lat+80)/8))];return{z:z+b,g:Math.atan(Math.tan(dl*DEG)*Math.sin(lat*DEG))/DEG}}
+$('mode').onclick=()=>{modeI=(modeI+1)%3;$('mode').textContent=['TRUE NORTH','MAGNETIC NORTH','GRID NORTH'][modeI]};
+const hb=[];
+function hbuf(t,h){hb.push([t,h]);while(hb.length&&t-hb[0][0]>1500)hb.shift();
+ if(hb.length>=8){let c=0,sn=0;for(const x of hb){c+=Math.cos(x[1]*DEG);sn+=Math.sin(x[1]*DEG)}const Rr=Math.hypot(c,sn)/hb.length;stab=Rr>=1?0:Math.sqrt(-2*Math.log(Rr))/DEG}else stab=null}
+let kp=null;try{kp=JSON.parse(localStorage.getItem('kp'))}catch(e){}
+async function loadKp(){try{const r=await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json',{cache:'no-store'});const j=await r.json(),l=j[j.length-1];
+ const v=parseFloat(l[1]);if(isFinite(v)){kp={kp:v,t:l[0],got:Date.now()};try{localStorage.setItem('kp',JSON.stringify(kp))}catch(e){}}}catch(e){}}
+loadKp();setInterval(loadKp,15*60e3);
+const kpOk=()=>kp&&isFinite(kp.kp)&&Date.now()-kp.got<6*3600e3;
+const gLvl=()=>kpOk()?Math.max(0,Math.min(5,Math.round(kp.kp)-4)):0;
+function startMag(){try{if('Magnetometer' in window){const m=new Magnetometer({frequency:5});m.onreading=()=>{magF=Math.hypot(m.x,m.y,m.z)*1000};m.onerror=()=>{magF=null};m.start()}}catch(e){}}
+function alerts(){const a=[];
+ if(loc&&(yr<2025||yr>=2030))a.push(['bad','Model outside its validity period (2025–2030): declination may be inaccurate.','OUT OF VALIDITY']);
+ if(fl){if(fl.H<2000)a.push(['bad','BLACKOUT ZONE (H '+Math.round(fl.H)+' nT &lt; 2000): declination is invalid and the compass cannot be trusted.','BLACKOUT ZONE']);
+  else if(fl.H<6000)a.push(['warn','CAUTION ZONE (H '+Math.round(fl.H)+' nT &lt; 6000): compass accuracy is degraded.','CAUTION ZONE'])}
+ const g=gLvl();
+ if(g>0){const ml=fl?Math.abs(Math.atan(Math.tan(fl.I*DEG)/2)/DEG):0,hi=ml>55;
+  a.push([g>=3&&hi?'bad':'warn','Geomagnetic storm G'+g+' (Kp '+kp.kp.toFixed(1)+')'+(g>=3?': in G4–G5 storms, declination deviations of 15–17° were recorded at high latitudes (NCEI/BGS, Dec 2025).':hi?': high geomagnetic latitude, expect larger declination deviations.':'.'),'STORM G'+g])}
+ if(magF!=null&&fl&&Math.abs(magF-fl.F)/fl.F>.25)a.push(['warn','Possible magnetic interference: measured field '+(magF/1000).toFixed(0)+' µT vs model '+(fl.F/1000).toFixed(0)+' µT. Move away from metal/magnets.','INTERFERENCE?']);
+ if(loc&&modeI==2&&gc==null)a.push(['warn','Grid north is unavailable at this latitude (polar): showing true north.','GRID N/A']);
+ return a}
+function renderAlerts(){const a=alerts();$('alert').innerHTML=a.map(x=>'<div class="al '+x[0]+'">'+x[1]+'</div>').join('');
+ const w=$('a-warn');if(a.length){w.hidden=false;w.textContent='⚠ '+a[0][2];w.style.color=a[0][0]=='bad'?'#ff8a85':'#e0b04a'}else w.hidden=true}
+
 $('mset').onclick=()=>{const a=parseFloat($('mlat').value),o=parseFloat($('mlon').value);if(isFinite(a)&&isFinite(o)&&Math.abs(a)<=90&&Math.abs(o)<=180)man={lat:a,lon:o,alt:0,acc:0}};
 function setQ(n){q=q?slerp(q,n,.25):n}
 function startOri(){
@@ -9212,28 +9255,31 @@ else{window.addEventListener('deviceorientation',ev=>{if(ev.absolute)hdl(ev)},tr
 if('AbsoluteOrientationSensor' in window){try{const s=new AbsoluteOrientationSensor({frequency:60,referenceFrame:'device'});
 s.onreading=()=>setQ(Array.from(s.quaternion));s.onerror=()=>{src='fallback';fb()};s.start();src='AbsoluteOrientationSensor';return}catch(e){}}
 fb()}
-$('go').onclick=()=>{if(run)return;run=true;$('go').textContent='RUNNING';startOri();
-if(navigator.geolocation)navigator.geolocation.watchPosition(p=>{pos={lat:p.coords.latitude,lon:p.coords.longitude,alt:(p.coords.altitude||0)/1000,acc:p.coords.accuracy}},()=>{},{enableHighAccuracy:true,maximumAge:5000})};
+$('go').onclick=()=>{if(run)return;run=true;$('go').textContent='RUNNING';startOri();startMag();
+if(navigator.geolocation)navigator.geolocation.watchPosition(p=>{pos={lat:p.coords.latitude,lon:p.coords.longitude,alt:(p.coords.altitude||0)/1000,acc:p.coords.accuracy,altM:p.coords.altitude}},()=>{},{enableHighAccuracy:true,maximumAge:5000})};
 const W=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 const sg=(v,d)=>(v>=0?'+':'−')+Math.abs(v).toFixed(d)+'°';
 let mag=null,dec=null,fl=null,loc=null,yr=0;
 function frame(t){requestAnimationFrame(frame);loc=pos||man;fl=null;
-if(loc){yr=decYear(new Date());const key=loc.lat.toFixed(4)+loc.lon.toFixed(4)+loc.alt.toFixed(2)+Math.floor(yr*1e5);if(key!=ck){ck=key;cf=WMM.field(loc.lat,loc.lon,loc.alt,yr)}fl=cf}
-dec=fl?fl.D:null;
-if(q){mag=magHeading(q);let hd=mag+(trueMode&&dec!=null?dec:0);hd=((hd+trim())%360+360)%360;
+if(loc){yr=decYear(new Date());const key=loc.lat.toFixed(4)+loc.lon.toFixed(4)+loc.alt.toFixed(2)+Math.floor(yr*1e5);if(key!=ck){ck=key;cf=WMM.field(loc.lat,loc.lon,loc.alt,yr);const a1=WMM.field(loc.lat,loc.lon,loc.alt,yr-.5),a2=WMM.field(loc.lat,loc.lon,loc.alt,yr+.5);dDdt=((a2.D-a1.D+540)%360-180)*60;const gv=gridConv(loc.lat,loc.lon);gc=gv?gv.g:null;gz=gv?gv.z:'—'}fl=cf}
+dec=fl?fl.D:null;sig=fl?Math.sqrt(.0625+Math.pow(5205/fl.H,2)):null;
+if(q){mag=magHeading(q);hbuf(t,mag);let hd=mag+modeOff();hd=((hd+trim())%360+360)%360;
  $('hd').firstChild.nodeValue=hd.toFixed(1);$('dir').textContent=W[Math.round(hd/22.5)%16];
  $('dial').setAttribute('transform',`rotate(${(-hd).toFixed(2)})`);
  if(Math.abs(hd-lastTape)>.02){lastTape=hd;tape(hd)}
- $('ref').textContent=trueMode?(dec!=null?'True north · magnetic + declination':'Magnetic only — waiting for position'):'Magnetic north'}
+ $('ref').textContent=modeI==1?'Magnetic north':dec==null?'Magnetic only — waiting for position':modeI==0?'True north · magnetic + declination':(gc==null?'Grid unavailable here — showing true north':'Grid north (UTM '+gz+') · magnetic + declination − convergence')}
 if(t-lastUi>250){lastUi=t;
  $('m-mag').textContent=mag==null?'—':mag.toFixed(1)+'°';$('m-dec').textContent=dec==null?'—':sg(dec,2);
  $('m-inc').textContent=fl?fl.I.toFixed(1)+'°':'—';$('m-f').textContent=fl?Math.round(fl.F).toLocaleString('en-US')+' nT':'—';
  $('m-pos').textContent=loc?loc.lat.toFixed(4)+', '+loc.lon.toFixed(4):'—';
  $('m-acc').textContent=pos?'±'+Math.round(pos.acc)+' m':man?'manual':'—';
+ $('m-sig').textContent=sig==null?'—':'±'+(sig>9.99?'>10':sig.toFixed(2))+'°';$('m-stab').textContent=stab==null?'—':'±'+stab.toFixed(2)+'°';
+ $('m-sv').textContent=loc&&dDdt!=null?(dDdt>=0?'+':'−')+Math.abs(dDdt).toFixed(1)+'′/yr':'—';$('m-utm').textContent=loc?gz:'—';
+ $('m-gc').textContent=loc&&gc!=null?sg(gc,2):'—';$('m-gv').textContent=loc&&dec!=null&&gc!=null?sg(dec-gc,2):'—';
  let s=`Sensor: <b style="color:var(--fg)">${src}</b>`+(q?` · ${useBack?'upright':'flat'} mode`:'')+'<br>'+$('status').dataset.t;
- if(!window.isSecureContext)s+='<br><b class="bad">Not a secure context — sensors/GPS may be blocked. Serve over HTTPS.</b>';
+ if(loc&&yr>=2025&&yr<2030)s+='<br>Model valid for '+(2030-yr).toFixed(1)+' more years (until 2030.0)';if(!window.isSecureContext)s+='<br><b class="bad">Not a secure context — sensors/GPS may be blocked. Serve over HTTPS.</b>';
  if(loc&&(yr<2025||yr>=2030))s+='<br><b class="bad">Outside the WMMHR2025 validity period (2025–2030).</b>';
- $('status').innerHTML=s}if(arOn)arDraw()}
+ $('status').innerHTML=s;renderAlerts()}if(arOn)arDraw()}
 
 /* ===== AR LEVEL ===== */
 const ar=$('ar'),vid=$('vid'),cv=$('cv'),cx=cv.getContext('2d'),am=$('a-msg');let arOn=false,stream=null,fov=67,lt=0,rOff=0,pOff=0,tAz=null,tEl=0,showSun=true,cur=null;
@@ -9253,10 +9299,110 @@ document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>setTab(b.dataset.
 const nrm=x=>((x%360)+540)%360-180;
 $('s-zero').onclick=()=>{if(!cur)return;rOff=-cur.roll;pOff=-(cur.pitch-lt);sv('rOff',rOff);sv('pOff',pOff)};
 $('s-rz').onclick=()=>{rOff=pOff=0;sv('rOff',0);sv('pOff',0)};
-$('s-sc').onclick=()=>{if(!cur||!loc)return;const s=sunPos(new Date(),loc.lat,loc.lon);const nt=nrm(s.az-(cur.hdgC+(dec||0)));$('trim').value=nt.toFixed(2);sv('trim',nt.toFixed(2));am.textContent='Heading trim set to '+nt.toFixed(2)+'° from the Sun';setTimeout(()=>{if(am.textContent.startsWith('Heading'))am.textContent=''},2500)};
-$('a-cap').onclick=()=>{const c=document.createElement('canvas');c.width=cv.width;c.height=cv.height;const g=c.getContext('2d'),vw=vid.videoWidth,vh=vid.videoHeight;
- if(vw){const s=Math.max(c.width/vw,c.height/vh);g.drawImage(vid,(c.width-vw*s)/2,(c.height-vh*s)/2,vw*s,vh*s)}g.drawImage(cv,0,0);
- c.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='ar-level-'+Date.now()+'.png';a.click()})};
+const sunS=[];
+$('s-sc').onclick=()=>{if(!cur||!loc)return;const s=sunPos(new Date(),loc.lat,loc.lon);if(s.el<-1){toast('The Sun is below the horizon');return}
+ sunS.push(nrm(s.az-(cur.hdgC+(dec||0))));if(sunS.length>8)sunS.shift();
+ let c=0,sn=0;for(const v of sunS){c+=Math.cos(v*D);sn+=Math.sin(v*D)}const m=Math.atan2(sn,c)/D,
+ sd=sunS.length>1?Math.sqrt(sunS.reduce((a,v)=>a+Math.pow(nrm(v-m),2),0)/(sunS.length-1)):null;
+ $('trim').value=m.toFixed(2);sv('trim',m.toFixed(2));
+ toast('Heading trim '+m.toFixed(2)+'° from the Sun ('+sunS.length+(sd==null?' sample':' samples, σ '+sd.toFixed(2)+'°')+')')};
+$('s-scr').onclick=()=>{sunS.length=0;toast('Sun calibration samples cleared')};
+const p2=n=>String(n).padStart(2,'0');
+function tstr(d){const u=d.getUTCFullYear()+'-'+p2(d.getUTCMonth()+1)+'-'+p2(d.getUTCDate())+' '+p2(d.getUTCHours())+':'+p2(d.getUTCMinutes())+':'+p2(d.getUTCSeconds()),
+ o=-d.getTimezoneOffset(),ao=Math.abs(o),tz=(o>=0?'+':'-')+p2(Math.floor(ao/60))+':'+p2(ao%60),
+ l=d.getFullYear()+':'+p2(d.getMonth()+1)+':'+p2(d.getDate())+' '+p2(d.getHours())+':'+p2(d.getMinutes())+':'+p2(d.getSeconds());return{u,tz,l}}
+function encE(e){let b;if(e.type==2){const t=e.val+'\0';b=new Uint8Array(t.length);for(let i=0;i<t.length;i++)b[i]=t.charCodeAt(i)&255}
+ else if(e.type==1||e.type==7)b=Uint8Array.from(e.val);
+ else if(e.type==3){b=new Uint8Array(e.val.length*2);const v=new DataView(b.buffer);e.val.forEach((x,i)=>v.setUint16(i*2,x,true))}
+ else if(e.type==4){b=new Uint8Array(e.val.length*4);const v=new DataView(b.buffer);e.val.forEach((x,i)=>v.setUint32(i*4,x,true))}
+ else{b=new Uint8Array(e.val.length*8);const v=new DataView(b.buffer);e.val.forEach((x,i)=>{v.setUint32(i*8,x[0],true);v.setUint32(i*8+4,x[1],true)})}
+ return{b,n:e.type==3?b.length/2:e.type==4?b.length/4:e.type==5?b.length/8:b.length}}
+function ifdBlock(entries,start){entries=entries.slice().sort((a,b)=>a.tag-b.tag);const n=entries.length,hdr=2+12*n+4,enc=entries.map(encE);
+ let total=hdr;for(const r of enc)if(r.b.length>4)total+=r.b.length+(r.b.length&1);
+ const out=new Uint8Array(total),dv=new DataView(out.buffer);dv.setUint16(0,n,true);let dp=hdr;
+ entries.forEach((e,i)=>{const r=enc[i],o=2+12*i;dv.setUint16(o,e.tag,true);dv.setUint16(o+2,e.type,true);dv.setUint32(o+4,r.n,true);
+  if(r.b.length<=4)out.set(r.b,o+8);else{dv.setUint32(o+8,start+dp,true);out.set(r.b,dp);dp+=r.b.length+(r.b.length&1)}});
+ dv.setUint32(2+12*n,0,true);return out}
+function addExif(jpg,s){const asc=t=>String(t).replace(/[^\x20-\x7e]/g,'?'),dt=tstr(new Date(s.utc)).l,d=new Date(s.utc);
+ const ifd0=[{tag:0x010E,type:2,val:asc('WMMHR Compass: HDG '+s.mode+' '+s.hdgShown+' deg, pitch '+s.pitchDeg+', roll '+s.rollDeg)},{tag:0x0131,type:2,val:'WMMHR Compass 2 (WMMHR2025)'},{tag:0x0132,type:2,val:dt}];
+ const ptrE={tag:0x8769,type:4,val:[0]},ptrG={tag:0x8825,type:4,val:[0]};
+ const uc=[...'ASCII\0\0\0'].map(c=>c.charCodeAt(0)).concat([...asc(JSON.stringify(s))].map(c=>c.charCodeAt(0)));
+ const exif=[{tag:0x9000,type:7,val:[48,50,51,49]},{tag:0x9003,type:2,val:dt},{tag:0x9011,type:2,val:s.tz},{tag:0x9286,type:7,val:uc}];
+ const gps=[{tag:0,type:1,val:[2,3,0,0]}];
+ const dms=v=>{v=Math.abs(v);const a=Math.floor(v),m=Math.floor((v-a)*60),c=((v-a)*60-m)*60;return[[a,1],[m,1],[Math.round(c*1e4),1e4]]};
+ if(s.lat!=null){gps.push({tag:1,type:2,val:s.lat>=0?'N':'S'},{tag:2,type:5,val:dms(s.lat)},{tag:3,type:2,val:s.lon>=0?'E':'W'},{tag:4,type:5,val:dms(s.lon)});
+  if(s.altM!=null)gps.push({tag:5,type:1,val:[s.altM<0?1:0]},{tag:6,type:5,val:[[Math.round(Math.abs(s.altM)*100),100]]});
+  if(s.posSource=='gps'&&s.gpsAccM!=null)gps.push({tag:0x1F,type:5,val:[[Math.round(s.gpsAccM*100),100]]})}
+ gps.push({tag:7,type:5,val:[[d.getUTCHours(),1],[d.getUTCMinutes(),1],[d.getUTCSeconds()*1000,1000]]},{tag:0x1D,type:2,val:d.getUTCFullYear()+':'+p2(d.getUTCMonth()+1)+':'+p2(d.getUTCDate())});
+ const tr=s.hdgTrue!=null;gps.push({tag:0x10,type:2,val:tr?'T':'M'},{tag:0x11,type:5,val:[[Math.round((tr?s.hdgTrue:s.hdgMag)*100),100]]});
+ const e0=ifd0.concat([ptrE,ptrG]),b0=ifdBlock(e0,8);ptrE.val=[8+b0.length];const bE=ifdBlock(exif,ptrE.val[0]);ptrG.val=[ptrE.val[0]+bE.length];const bG=ifdBlock(gps,ptrG.val[0]);
+ const b0b=ifdBlock(e0,8),tiff=new Uint8Array(8+b0b.length+bE.length+bG.length);tiff.set([0x49,0x49,42,0,8,0,0,0]);tiff.set(b0b,8);tiff.set(bE,8+b0b.length);tiff.set(bG,8+b0b.length+bE.length);
+ const len=2+6+tiff.length;if(len>65535||jpg[0]!=0xFF||jpg[1]!=0xD8)return jpg;
+ const out=new Uint8Array(2+2+len+jpg.length-2);out.set([0xFF,0xD8,0xFF,0xE1,len>>8,len&255,0x45,0x78,0x69,0x66,0,0]);out.set(tiff,12);out.set(jpg.subarray(2),12+tiff.length);return out}
+
+/* ===== v2: stamped capture, EXIF, gallery ===== */
+let toastT=0;function toast(m){const e=$('toast');e.textContent=m;e.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{e.hidden=true},3400)}window.toast=toast;
+const DB=(()=>{let p;const open=()=>p||(p=new Promise((res,rej)=>{const r=indexedDB.open('wmmhr',1);r.onupgradeneeded=()=>r.result.createObjectStore('caps',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
+ const tx=async(m,f)=>{const d=await open();return new Promise((res,rej)=>{const t=d.transaction('caps',m),r=f(t.objectStore('caps'));t.oncomplete=()=>res(r.result);t.onerror=()=>rej(t.error)})};
+ return{put:o=>tx('readwrite',s=>s.put(o)),all:()=>tx('readonly',s=>s.getAll()),del:id=>tx('readwrite',s=>s.delete(id))}})();
+function dl(b,n){const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000)}
+async function sha(buf){try{const h=await crypto.subtle.digest('SHA-256',buf);return[...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('')}catch(e){return null}}
+const n360=v=>((v%360)+360)%360,r2=(v,k)=>v==null?null:+v.toFixed(k);
+function snapshot(){const d=new Date(),T=tstr(d),hc=cur.hdgC,tm=trim(),dc=dec;
+ return{app:'WMMHR Compass 2',model:'WMMHR2025',epochYear:r2(yr,4),utc:d.toISOString(),local:T.l,tz:T.tz,
+ lat:loc?r2(loc.lat,6):null,lon:loc?r2(loc.lon,6):null,altM:pos&&pos.altM!=null?r2(pos.altM,1):null,gpsAccM:pos?r2(pos.acc,1):null,posSource:pos?'gps':man?'manual':null,
+ mode:modeNm(),hdgShown:r2(n360(hc+modeOff()+tm),2),hdgMag:r2(n360(hc+tm),2),hdgTrue:dc==null?null:r2(n360(hc+dc+tm),2),hdgGrid:dc==null||gc==null?null:r2(n360(hc+dc-gc+tm),2),
+ declDeg:r2(dc,3),inclDeg:fl?r2(fl.I,3):null,F_nT:fl?Math.round(fl.F):null,H_nT:fl?Math.round(fl.H):null,gridConvDeg:r2(gc,3),utmZone:loc?gz:null,
+ pitchDeg:r2(cur.pitch+pOff,2),rollDeg:r2(cur.roll+rOff,2),trimDeg:tm,rollZero:r2(rOff,2),pitchZero:r2(pOff,2),fovDeg:fov,
+ sigmaDeclModelDeg:r2(sig,3),headingStabilityDeg:r2(stab,3),sensor:src,kp:kpOk()?kp.kp:null}}
+function stamp(g,W,H,s){const T=tstr(new Date(s.utc)),sgn=(v,d)=>v==null?'—':(v>=0?'+':'−')+Math.abs(v).toFixed(d)+'°';
+ const L=[['WMMHR COMPASS · '+s.model+' · epoch '+s.epochYear.toFixed(2),'#c9a45c'],
+ [T.u+' UTC | '+T.l.slice(0,10).replace(/:/g,'-')+T.l.slice(10)+' (UTC'+s.tz+')'],
+ [s.lat==null?'POSITION UNAVAILABLE':'LAT '+s.lat.toFixed(5)+'°  LON '+s.lon.toFixed(5)+'°  ALT '+(s.altM==null?'—':Math.round(s.altM)+' m')+'  ±'+(s.posSource=='gps'?Math.round(s.gpsAccM)+' m':'manual')],
+ ['HDG '+s.mode+' '+s.hdgShown.toFixed(1)+'°  MAG '+s.hdgMag.toFixed(1)+'°  DEC '+sgn(s.declDeg,2)],
+ ['PITCH '+sgn(s.pitchDeg,1)+'  ROLL '+sgn(s.rollDeg,1)+'  σhdg '+(s.headingStabilityDeg==null?'—':s.headingStabilityDeg.toFixed(2)+'°')],
+ ['σD(model) ±'+(s.sigmaDeclModelDeg==null?'—':s.sigmaDeclModelDeg.toFixed(2)+'°')+'  trim '+sgn(s.trimDeg,1)+'  FOV '+s.fovDeg+'°']];
+ const F='ui-monospace,Menlo,Consolas,monospace';let fs=Math.round(W/40);const pad=fs*.7;g.font=fs+'px '+F;
+ const mw=Math.max(...L.map(l=>g.measureText(l[0]).width));if(mw>W-2*pad)fs=Math.floor(fs*(W-2*pad)/mw);
+ const lh=fs*1.38,bh=L.length*lh+pad*1.4;g.fillStyle='rgba(8,10,14,.74)';g.fillRect(0,0,W,bh);g.textBaseline='top';g.textAlign='left';
+ L.forEach((l,i)=>{g.font=(i==0?'600 ':'')+fs+'px '+F;g.fillStyle=l[1]||'#eef1f6';g.fillText(l[0],pad,pad*.7+i*lh)})}
+let busy=false;
+async function capture(){if(busy)return;if(!cur){toast('Waiting for orientation sensor…');return}busy=true;
+ try{const s=snapshot(),vw=vid.videoWidth,vh=vid.videoHeight;let oW=cv.width,oH=cv.height,sx=0,sy=0,sw=vw,sh=vh;
+  if(vw){const cw=ar.clientWidth,ch=ar.clientHeight,k0=Math.max(cw/vw,ch/vh);sw=cw/k0;sh=ch/k0;sx=(vw-sw)/2;sy=(vh-sh)/2;const k=Math.max(1,sw/cv.width);oW=Math.round(cv.width*k);oH=Math.round(cv.height*k)}
+  const c=document.createElement('canvas');c.width=oW;c.height=oH;const g=c.getContext('2d');g.fillStyle='#000';g.fillRect(0,0,oW,oH);
+  if(vw)g.drawImage(vid,sx,sy,sw,sh,0,0,oW,oH);g.drawImage(cv,0,0,oW,oH);stamp(g,oW,oH,s);
+  const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.92));let u8=new Uint8Array(await blob.arrayBuffer());u8=addExif(u8,s);
+  s.sha256=await sha(u8);const tt=tstr(new Date(s.utc)).u.replace(/[-: ]/g,''),name='wmmhr_'+tt.slice(0,8)+'_'+tt.slice(8)+'Z.jpg',jb=new Blob([u8],{type:'image/jpeg'});
+  await DB.put({id:Date.now(),name,meta:s,blob:jb});if($('s-dl').checked)dl(jb,name);toast('Captured: '+name);updGalCount()}
+ catch(e){toast('Capture failed: '+(e&&e.message||e))}finally{busy=false}}
+$('a-cap').onclick=capture;
+let autoT=0,autoCool=0;
+function autoCheck(ok){if(!$('s-auto').checked){autoT=0;return}const now=performance.now();if(now<autoCool)return;
+ if(ok&&stab!=null&&stab<.25){if(!autoT)autoT=now;if(now-autoT>1200){autoT=0;autoCool=now+3000;capture()}}else autoT=0}
+const gal=$('gal'),glist=$('gal-list');let gurls=[];
+async function updGalCount(){try{const n=(await DB.all()).length;$('gal-o').textContent='GALLERY'+(n?' ('+n+')':'')}catch(e){}}
+async function shareRec(r){const f=new File([r.blob],r.name,{type:'image/jpeg'});try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'WMMHR capture'});return}}catch(e){if(e&&e.name=='AbortError')return}dl(r.blob,r.name)}
+async function renderGal(){gurls.forEach(u=>URL.revokeObjectURL(u));gurls=[];let all=[];try{all=await DB.all()}catch(e){}all.sort((a,b)=>b.id-a.id);
+ $('gal-n').textContent=all.length+' capture'+(all.length==1?'':'s');glist.innerHTML='';
+ if(!all.length){glist.innerHTML='<div class="gi" style="color:var(--mut)">No captures yet. Use CAPTURE in the AR LEVEL tab.</div>';return}
+ for(const r of all){const u=URL.createObjectURL(r.blob),m=r.meta,d=document.createElement('div');gurls.push(u);d.className='gi';
+  d.innerHTML='<img src="'+u+'" alt=""><div class="gt"><b>'+m.utc.replace('T',' ').slice(0,19)+' UTC</b><br>'+(m.lat==null?'no position':m.lat.toFixed(5)+', '+m.lon.toFixed(5))+'<br>HDG '+m.mode+' '+m.hdgShown.toFixed(1)+'° · P '+m.pitchDeg.toFixed(1)+'° R '+m.rollDeg.toFixed(1)+'°<div class="gb"><button data-a="sh">SHARE</button><button data-a="js">JSON</button><button data-a="rm">DELETE</button></div></div>';
+  d.querySelector('[data-a=sh]').onclick=()=>shareRec(r);
+  d.querySelector('[data-a=js]').onclick=()=>dl(new Blob([JSON.stringify(m,null,2)],{type:'application/json'}),r.name.replace(/\.jpg$/,'.json'));
+  d.querySelector('[data-a=rm]').onclick=async()=>{if(confirm('Delete this capture?')){await DB.del(r.id);renderGal();updGalCount()}};glist.appendChild(d)}}
+const openGal=()=>{gal.hidden=false;renderGal()};
+$('gal-o').onclick=openGal;$('a-gal').onclick=openGal;$('gal-x').onclick=()=>{gal.hidden=true;gurls.forEach(u=>URL.revokeObjectURL(u));gurls=[]};
+async function exportAll(kind){let all=[];try{all=(await DB.all()).sort((a,b)=>a.id-b.id)}catch(e){}if(!all.length){toast('Nothing to export');return}
+ if(kind=='csv'){const cols=['utc','lat','lon','altM','gpsAccM','mode','hdgShown','hdgTrue','hdgMag','hdgGrid','declDeg','pitchDeg','rollDeg','trimDeg','sigmaDeclModelDeg','headingStabilityDeg','model','sha256'],
+  esc=v=>v==null?'':/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':v;
+  dl(new Blob([['file,'+cols.join(',')].concat(all.map(r=>[r.name].concat(cols.map(c=>r.meta[c])).map(esc).join(','))).join('\n')],{type:'text/csv'}),'wmmhr_captures.csv')}
+ else if(kind=='geo'){const f=all.filter(r=>r.meta.lat!=null).map(r=>({type:'Feature',geometry:{type:'Point',coordinates:[r.meta.lon,r.meta.lat].concat(r.meta.altM!=null?[r.meta.altM]:[])},properties:Object.assign({file:r.name},r.meta)}));
+  dl(new Blob([JSON.stringify({type:'FeatureCollection',features:f},null,1)],{type:'application/geo+json'}),'wmmhr_captures.geojson')}
+ else{const x=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;'),pm=all.filter(r=>r.meta.lat!=null).map(r=>'<Placemark><name>'+x(r.name)+'</name><description>'+x('HDG '+r.meta.mode+' '+r.meta.hdgShown+' deg, pitch '+r.meta.pitchDeg+', roll '+r.meta.rollDeg+', '+r.meta.utc)+'</description><Point><coordinates>'+r.meta.lon+','+r.meta.lat+(r.meta.altM!=null?','+r.meta.altM:'')+'</coordinates></Point></Placemark>').join('');
+  dl(new Blob(['<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>WMMHR captures</name>'+pm+'</Document></kml>'],{type:'application/vnd.google-earth.kml+xml'}),'wmmhr_captures.kml')}}
+$('gal-csv').onclick=()=>exportAll('csv');$('gal-geo').onclick=()=>exportAll('geo');$('gal-kml').onclick=()=>exportAll('kml');
+updGalCount();
 function arDraw(){const W=ar.clientWidth,H=ar.clientHeight,dp=devicePixelRatio||1;if(cv.width!=Math.round(W*dp)||cv.height!=Math.round(H*dp)){cv.width=Math.round(W*dp);cv.height=Math.round(H*dp)}
 cx.setTransform(dp,0,0,dp,0,0);cx.clearRect(0,0,W,H);if(!q){am.textContent=am.textContent||'Waiting for orientation sensor…';return}
 const[x,y,z,w]=q,X=[1-2*(y*y+z*z),2*(x*y+z*w),2*(x*z-y*w)],Y=[2*(x*y-z*w),1-2*(x*x+z*z),2*(y*z+x*w)],Zv=[2*(x*z+y*w),2*(y*z-x*w),1-2*(x*x+y*y)],
@@ -9264,7 +9410,7 @@ a=((screen.orientation&&screen.orientation.angle)||window.orientation||0)%360,an
 const neg=v=>v.map(e=>-e);let Rv,Uv;if(ang==90){Rv=neg(Y);Uv=X}else if(ang==180){Rv=neg(X);Uv=neg(Y)}else if(ang==270){Rv=Y;Uv=neg(X)}else{Rv=X;Uv=Y}
 const F=neg(Zv),dot=(u,v)=>u[0]*v[0]+u[1]*v[1]+u[2]*v[2];
 const hdgC=(Math.atan2(F[0],F[1])/D+360)%360,pitch=Math.asin(Math.max(-1,Math.min(1,F[2])))/D,roll=Math.atan2(-Rv[2],Uv[2])/D;cur={hdgC,pitch,roll};
-const off=(trueMode&&dec!=null?dec:0)+trim(),hdg=((hdgC+off)%360+360)%360,pr=pitch+pOff,rr=roll+rOff,ep=pr-lt,er=rr;
+const off=modeOff()+trim(),hdg=((hdgC+off)%360+360)%360,pr=pitch+pOff,rr=roll+rOff,ep=pr-lt,er=rr;
 const f=(Math.max(W,H)/2)/Math.tan(fov*D/2),cxm=W/2,cym=H/2;
 const pj=(az,el)=>{const aa=(az-off)*D,e=el*D,d=[Math.sin(aa)*Math.cos(e),Math.cos(aa)*Math.cos(e),Math.sin(e)],cf=dot(d,F);if(cf<=.03)return null;return[cxm+f*dot(d,Rv)/cf,cym-f*dot(d,Uv)/cf]};
 const ok=Math.abs(er)<=.3&&Math.abs(ep)<=.3,mid=Math.abs(er)<=1&&Math.abs(ep)<=1,col=ok?'#5fb98a':mid?'#e0b04a':'#e2625d';
@@ -9285,7 +9431,7 @@ const mk=(lb,az,el,c)=>{const aa=(az-off)*D,e=el*D,d=[Math.sin(aa)*Math.cos(e),M
  if(p&&p[0]>m&&p[0]<W-m&&p[1]>m&&p[1]<H-m){cx.beginPath();cx.arc(p[0],p[1],14,0,7);cx.stroke();cx.beginPath();cx.arc(p[0],p[1],2.5,0,7);cx.fill();cx.textAlign='left';cx.fillText(lb+' '+az.toFixed(1)+'° / '+el.toFixed(1)+'°',p[0]+19,p[1])}
  else{const L=Math.hypot(cr,cu)||1,R=Math.min(W,H)/2-34,ex=cxm+cr/L*R,ey=cym-cu/L*R,th=Math.atan2(-cu,cr);cx.save();cx.translate(ex,ey);cx.rotate(th);cx.beginPath();cx.moveTo(12,0);cx.lineTo(-8,-8);cx.lineTo(-8,8);cx.closePath();cx.fill();cx.restore();
   cx.textAlign='center';cx.fillText(lb+' '+sep.toFixed(0)+'°',ex-cr/L*30,ey+cu/L*30)}};
-if(showSun&&loc){const s=sunPos(new Date(),loc.lat,loc.lon);if(s.el>-5)mk('SUN',s.az,s.el,'#f2d04d')}
+if(showSun&&loc){const s=sunPos(new Date(),loc.lat,loc.lon);if(s.el>-5)mk('SUN',(((s.az-(dec!=null?dec-modeOff():0))%360)+360)%360,s.el,'#f2d04d')}
 if(tAz!=null)mk('TARGET',((tAz%360)+360)%360,tEl,'#59b7f0');
 // target box
 const bs=34;cx.strokeStyle=col;cx.lineWidth=2.2;for(const[sx,sy]of[[-1,-1],[1,-1],[1,1],[-1,1]]){cx.beginPath();cx.moveTo(cxm+sx*bs,cym+sy*(bs-14));cx.lineTo(cxm+sx*bs,cym+sy*bs);cx.lineTo(cxm+sx*(bs-14),cym+sy*bs);cx.stroke()}
@@ -9302,11 +9448,12 @@ cx.fillStyle=col;const gxp=cxm+Math.max(-6.4,Math.min(6.4,er))*20,gyp=cym-Math.m
 cx.beginPath();cx.moveTo(gxp,gy+2);cx.lineTo(gxp-6,gy+12);cx.lineTo(gxp+6,gy+12);cx.fill();cx.beginPath();cx.moveTo(gx+2,gyp);cx.lineTo(gx+12,gyp-6);cx.lineTo(gx+12,gyp+6);cx.fill();
 // HTML readouts
 const sg2=v=>(v>=0?'+':'−')+Math.abs(v).toFixed(1)+'°';
-$('a-p').textContent=sg2(pr);$('a-r').textContent=sg2(rr);$('a-h').textContent=hdg.toFixed(1)+'°';$('a-hl').textContent=trueMode?(dec!=null?'HDG TRUE':'HDG MAG*'):'HDG MAG';
-const lvE=$('a-lv');lvE.style.color=col;lvE.textContent=ok?'LEVEL':'OFF  R '+sg2(er)+'  P '+sg2(ep)}
+$('a-p').textContent=sg2(pr);$('a-r').textContent=sg2(rr);$('a-h').textContent=hdg.toFixed(1)+'°';$('a-hl').textContent=modeI==1?'HDG MAG':dec!=null?'HDG '+modeNm():'HDG MAG*';
+const lvE=$('a-lv');lvE.style.color=col;lvE.textContent=(ok?'LEVEL':'OFF  R '+sg2(er)+'  P '+sg2(ep))+(stab!=null?'  σ'+stab.toFixed(1)+'°':'');autoCheck(ok)}
 requestAnimationFrame(frame)}
 </script><script>
 if('serviceWorker' in navigator&&location.protocol!=='file:')addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+if('serviceWorker' in navigator&&navigator.serviceWorker.controller)navigator.serviceWorker.addEventListener('controllerchange',()=>{if(window.toast)window.toast('New version installed — reopen the app to use it')});
 let dip=null;const ib=document.getElementById('inst');
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();dip=e;ib.hidden=false});
 ib.onclick=async()=>{if(!dip)return;dip.prompt();await dip.userChoice;dip=null;ib.hidden=true};

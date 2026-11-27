@@ -10,6 +10,16 @@ High-precision **true-north compass** and **AR level** for the browser, powered 
 - Heading trim, roll/pitch zeroing and one-tap heading calibration against the Sun
 - Built-in self-test against the official NOAA WMMHR2025 test values (12/12)
 
+## New in v2
+- **Stamped capture**: the AR photo is saved as JPEG at native camera resolution with a data band (UTC + local time, lat/lon/alt/GPS accuracy, true/magnetic/shown heading, declination, pitch, roll, heading stability, model error, trim, FOV).
+- **EXIF + metadata**: standard EXIF/GPS tags (incl. `GPSImgDirection` true/magnetic, GPS position and accuracy, UTC time) plus the full JSON in `UserComment`; SHA-256 of the JPEG kept in the gallery record.
+- **Gallery** (IndexedDB, offline): share, per-photo JSON, delete, export all as CSV / GeoJSON / KML. Optional auto-capture when level and steady for 1.2 s.
+- **Reliability alerts** (from the Dec 2025 State of the Geomagnetic Field report): Blackout zone (H < 2000 nT), Caution zone (H < 6000 nT), live NOAA SWPC Kp storm banner (cached, ignored if older than 6 h), validity period, optional magnetometer interference check (only where the browser exposes `Magnetometer`).
+- **Uncertainty**: declination model error from the WMMHR2025 error model, δD = sqrt(0.25² + (5205/H)²) (Technical Report eq. 44); heading stability (circular σ over 1.5 s).
+- **Grid North** mode (TRUE → MAG → GRID), UTM zone, grid convergence and grid variation; declination secular change (′/yr).
+- Sun calibration now averages up to 8 samples and reports the spread; Sun marker fixed in magnetic mode.
+- Service worker cache bumped to `wmmhr-compass-v2` with an update toast.
+
 ## Files
 `index.html` (app + embedded WMMHR2025 coefficients) · `manifest.webmanifest` · `sw.js` (offline cache) · icon files
 
