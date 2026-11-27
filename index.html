@@ -78,6 +78,9 @@ input:focus{border-color:var(--gold)}
 </section>
 <section class="card"><label>Heading trim (°) <input id="trim" type="number" step="0.1" value="0"></label>
 <div style="margin-top:4px">Offset applied to the displayed heading. Use it to remove residual sensor error by aiming at a target of known true bearing.</div></section>
+<section class="card"><label><input id="fuse" type="checkbox" style="width:auto" checked> Gyro fusion (absolute + relative orientation)</label>
+<label><input id="swon" type="checkbox" style="width:auto" checked> Use swing correction (replaces trim)</label>
+<div id="fst" style="margin-top:6px;line-height:1.5">—</div></section>
 <section class="card"><label>Manual position <input id="mlat" placeholder="Latitude"> <input id="mlon" placeholder="Longitude"> <button id="mset" style="flex:none;padding:7px 12px">Set</button></label></section>
 <section class="card" id="status">—</section>
 <div id="ar" hidden>
@@ -93,6 +96,10 @@ input:focus{border-color:var(--gold)}
 <label><input id="s-sun" type="checkbox" checked> Show Sun marker</label><label><input id="s-auto" type="checkbox"> Auto-capture when level &amp; steady (1.2 s)</label><label><input id="s-dl" type="checkbox" checked> Also download the JPEG on capture</label>
 <div class="r2"><button id="s-zero">ZERO ROLL &amp; PITCH</button><button id="s-rz">RESET ZERO</button></div>
 <div class="r2"><button id="s-sc">CALIBRATE HEADING TO SUN</button><button id="s-scr">RESET SUN CAL</button></div>
+<div class="r2"><button id="w-sun">ADD SWING POINT: SUN</button><button id="w-tgt">ADD SWING POINT: TARGET</button></div>
+<div class="r2"><button id="w-undo">UNDO LAST POINT</button><button id="w-rst">RESET SWING</button></div>
+<div id="w-info" style="margin-top:6px;line-height:1.5">—</div>
+<div style="margin-top:6px">Swing: sight the Sun (or a target whose true bearing you entered above) with the phone pointing in different headings, hold steady, tap ADD. Spread points around 360°. Calibrate in the pose you will use and redo after toggling gyro fusion.</div>
 <div style="margin-top:8px">Zero: hold the phone against a known plumb/level reference first. Sun calibration: centre the Sun inside the box on screen, then tap. Never look at the Sun directly.</div>
 </div>
 <div class="arbot"><button id="a-cap">CAPTURE</button><button id="a-gal">GALLERY</button><button id="a-gear">SETTINGS</button></div>
@@ -9232,7 +9239,7 @@ async function loadKp(){try{const r=await fetch('https://services.swpc.noaa.gov/
 loadKp();setInterval(loadKp,15*60e3);
 const kpOk=()=>kp&&isFinite(kp.kp)&&Date.now()-kp.got<6*3600e3;
 const gLvl=()=>kpOk()?Math.max(0,Math.min(5,Math.round(kp.kp)-4)):0;
-function startMag(){try{if('Magnetometer' in window){const m=new Magnetometer({frequency:5});m.onreading=()=>{magF=Math.hypot(m.x,m.y,m.z)*1000};m.onerror=()=>{magF=null};m.start()}}catch(e){}}
+function startMag(){try{if('Magnetometer' in window){const m=new Magnetometer({frequency:10});m.onreading=()=>{mv=[m.x,m.y,m.z];magF=Math.hypot(m.x,m.y,m.z)*1000;distCheck()};m.onerror=()=>{magF=null;mv=null;dLvl=null};m.start()}}catch(e){}}
 function alerts(){const a=[];
  if(loc&&(yr<2025||yr>=2030))a.push(['bad','Model outside its validity period (2025–2030): declination may be inaccurate.','OUT OF VALIDITY']);
  if(fl){if(fl.H<2000)a.push(['bad','BLACKOUT ZONE (H '+Math.round(fl.H)+' nT &lt; 2000): declination is invalid and the compass cannot be trusted.','BLACKOUT ZONE']);
@@ -9240,7 +9247,7 @@ function alerts(){const a=[];
  const g=gLvl();
  if(g>0){const ml=fl?Math.abs(Math.atan(Math.tan(fl.I*DEG)/2)/DEG):0,hi=ml>55;
   a.push([g>=3&&hi?'bad':'warn','Geomagnetic storm G'+g+' (Kp '+kp.kp.toFixed(1)+')'+(g>=3?': in G4–G5 storms, declination deviations of 15–17° were recorded at high latitudes (NCEI/BGS, Dec 2025).':hi?': high geomagnetic latitude, expect larger declination deviations.':'.'),'STORM G'+g])}
- if(magF!=null&&fl&&Math.abs(magF-fl.F)/fl.F>.25)a.push(['warn','Possible magnetic interference: measured field '+(magF/1000).toFixed(0)+' µT vs model '+(fl.F/1000).toFixed(0)+' µT. Move away from metal/magnets.','INTERFERENCE?']);
+ if(dLvl>=1)a.push([dLvl==2?'bad':'warn','Field inconsistent with WMMHR2025: |F| '+(dF>=0?'+':'−')+Math.abs(dF*100).toFixed(0)+'%, dip '+(dI>=0?'+':'−')+Math.abs(dI).toFixed(1)+'° vs model. Move away from metal/magnets; '+(fuseAct()?'heading is held by the gyro (magnetic correction paused).':'heading may be wrong.'),'FIELD ANOMALY']);
  if(loc&&modeI==2&&gc==null)a.push(['warn','Grid north is unavailable at this latitude (polar): showing true north.','GRID N/A']);
  return a}
 function renderAlerts(){const a=alerts();$('alert').innerHTML=a.map(x=>'<div class="al '+x[0]+'">'+x[1]+'</div>').join('');
@@ -9248,12 +9255,68 @@ function renderAlerts(){const a=alerts();$('alert').innerHTML=a.map(x=>'<div cla
 
 $('mset').onclick=()=>{const a=parseFloat($('mlat').value),o=parseFloat($('mlon').value);if(isFinite(a)&&isFinite(o)&&Math.abs(a)<=90&&Math.abs(o)<=180)man={lat:a,lon:o,alt:0,acc:0}};
 function setQ(n){q=q?slerp(q,n,.25):n}
+/* ===== v3: gyro fusion, WMM field-consistency check, swing calibration ===== */
+const DIST={f1:.12,i1:5,f2:.25,i2:10}; // |F| deviation and dip deviation thresholds (warn / anomaly); heuristic, tune per device
+let mv=null,dF=null,dI=null,dLvl=null;
+function distCheck(){if(!q||!fl||!mv){dLvl=null;return}
+ const n=Math.hypot(mv[0],mv[1],mv[2]);if(!(n>0))return;const[x,y,z,w]=q,
+ up=2*(x*z-y*w)*mv[0]+2*(y*z+x*w)*mv[1]+(1-2*(x*x+y*y))*mv[2],
+ I=Math.asin(Math.max(-1,Math.min(1,-up/n)))/DEG,f=n*1000/fl.F-1,di=I-fl.I;
+ dF=dF==null?f:dF+.2*(f-dF);dI=dI==null?di:dI+.2*(di-dI);
+ const a=Math.abs(dF),b=Math.abs(dI);dLvl=(a>DIST.f2||b>DIST.i2)?2:(a>DIST.f1||b>DIST.i1)?1:0}
+let qA=null,qR=null,tR=0,thF=null,thT=0,fT0=0,innov=0,omega=0,fuseOn=true;
+try{fuseOn=localStorage.getItem('fuse')!=='0'}catch(e){}
+const qm=(a,b)=>[a[3]*b[0]+a[0]*b[3]+a[1]*b[2]-a[2]*b[1],a[3]*b[1]-a[0]*b[2]+a[1]*b[3]+a[2]*b[0],a[3]*b[2]+a[0]*b[1]-a[1]*b[0]+a[2]*b[3],a[3]*b[3]-a[0]*b[0]-a[1]*b[1]-a[2]*b[2]];
+const wrapR=a=>a-2*Math.PI*Math.floor((a+Math.PI)/(2*Math.PI));
+const gateF=()=>(dLvl==null?1:[1,.25,0][dLvl])/(1+Math.pow(omega/30,2));
+const fuseAct=()=>fuseOn&&!!qR&&thF!=null&&performance.now()-tR<300;
+function fuseStep(t){ // yaw of q_abs * conj(q_rel): the rotation between the relative frame and ENU (pure rotation about Z)
+ const d=qm(qA,[-qR[0],-qR[1],-qR[2],qR[3]]),yaw=Math.atan2(2*(d[0]*d[1]+d[2]*d[3]),1-2*(d[1]*d[1]+d[2]*d[2]));
+ if(thF==null){thF=yaw;thT=t;fT0=t;innov=0;return}
+ const dt=Math.min(.2,Math.max(0,(t-thT)/1000));thT=t;const e=wrapR(yaw-thF);innov=e/DEG;
+ let k=(1-Math.exp(-dt/((t-fT0)<3000?.5:6)))*gateF();if(Math.abs(e)>20*DEG)k*=.1;
+ thF=wrapR(thF+k*e)}
+const fuseOut=()=>{const h=thF/2;return qm([0,0,Math.sin(h),Math.cos(h)],qR)};
+function onAbs(a,t){qA=a;if(fuseOn&&qR&&t-tR<300){fuseStep(t);if(!q)q=fuseOut();return}setQ(a)}
+function onRel(r,t){if(qR&&t>tR){const d=Math.abs(r[0]*qR[0]+r[1]*qR[1]+r[2]*qR[2]+r[3]*qR[3]);omega=2*Math.acos(Math.min(1,d))/DEG/((t-tR)/1000)}
+ qR=r;tR=t;if(fuseOn&&qA&&thF!=null)q=fuseOut()}
+/* swing: heading-dependent error e(psi)=a0+a1 sin psi+b1 cos psi+a2 sin 2psi+b2 cos 2psi (psi = raw magnetic heading) */
+let swP=[],swOn=true,swC=null;
+try{swP=(JSON.parse(localStorage.getItem('swP')||'[]')||[]).filter(a=>Array.isArray(a)&&isFinite(a[0])&&isFinite(a[1]))}catch(e){swP=[]}
+try{swOn=localStorage.getItem('swOn')!=='0'}catch(e){}
+function swSolve(A,b){const n=b.length;for(let i=0;i<n;i++){let p=i;for(let r=i+1;r<n;r++)if(Math.abs(A[r][i])>Math.abs(A[p][i]))p=r;if(Math.abs(A[p][i])<1e-12)return null;
+ [A[i],A[p]]=[A[p],A[i]];[b[i],b[p]]=[b[p],b[i]];for(let r=i+1;r<n;r++){const f=A[r][i]/A[i][i];for(let c=i;c<n;c++)A[r][c]-=f*A[i][c];b[r]-=f*b[i]}}
+ const x=Array(n).fill(0);for(let i=n-1;i>=0;i--){let s=b[i];for(let c=i+1;c<n;c++)s-=A[i][c]*x[c];x[i]=s/A[i][i]}return x}
+function swFit(){swC=null;const n=swP.length;if(!n)return;
+ const ps=swP.map(p=>((p[0]%360)+360)%360).sort((a,b)=>a-b);let gap=ps[0]+360-ps[n-1];for(let i=0;i<n-1;i++)gap=Math.max(gap,ps[i+1]-ps[i]);
+ let o=0;if(n>=5&&gap<=180)o=1;if(n>=8&&gap<=120)o=2;
+ const m=1+2*o,bs=p=>{const r=p*DEG;return[1,Math.sin(r),Math.cos(r),Math.sin(2*r),Math.cos(2*r)].slice(0,m)};
+ const A=Array.from({length:m},()=>Array(m).fill(0)),b=Array(m).fill(0);
+ for(const[p,e]of swP){const v=bs(p);for(let i=0;i<m;i++){b[i]+=v[i]*e;for(let j=0;j<m;j++)A[i][j]+=v[i]*v[j]}}
+ for(let i=1;i<m;i++)A[i][i]+=.01*n;
+ const c=swSolve(A,b);if(!c)return;let sse=0;for(const[p,e]of swP){const v=bs(p);let f=0;v.forEach((x,i)=>f+=x*c[i]);sse+=(e-f)*(e-f)}
+ const full=[0,0,0,0,0];c.forEach((v,i)=>full[i]=v);swC={c:full,o,n,gap,rms:n>m?Math.sqrt(sse/(n-m)):null}}
+const swCorr=psi=>{if(!swC)return 0;const r=psi*DEG,c=swC.c;let v=c[0];if(swC.o>=1)v+=c[1]*Math.sin(r)+c[2]*Math.cos(r);if(swC.o>=2)v+=c[3]*Math.sin(2*r)+c[4]*Math.cos(2*r);return v};
+const hcorr=psi=>swOn&&swC?swCorr(psi):trim();
+const swSave=()=>{try{localStorage.setItem('swP',JSON.stringify(swP))}catch(e){}};
+function swAdd(psi,e){swP.push([+psi.toFixed(2),+e.toFixed(3)]);if(swP.length>40)swP.shift();swSave();swFit()}
+function swInfo(){if(!swP.length)return'Swing correction: no points yet (AR → SETTINGS → add points)';
+ if(!swC)return'Swing: '+swP.length+' points';let lo=1e9,hi=-1e9;for(let a=0;a<360;a+=5){const v=swCorr(a);if(v<lo)lo=v;if(v>hi)hi=v}
+ return'Swing: '+swP.length+' pts · '+['offset only (need ≥5 pts)','3-term fit (5-term needs ≥8 pts, gaps ≤120°)','5-term fit'][swC.o]+' · '+(swC.rms==null?'RMS n/a':'RMS '+swC.rms.toFixed(2)+'°')+' · correction '+lo.toFixed(1)+'…'+hi.toFixed(1)+'° · max gap '+swC.gap.toFixed(0)+'° · '+(swOn?'<b class="ok">ACTIVE</b> (trim box ignored)':'off')}
+function fusStat(){let s;
+ if(!fuseOn)s='Gyro fusion: <b>OFF</b> (absolute sensor only)';
+ else if(fuseAct())s='Gyro fusion: <b class="ok">ON</b> · yaw offset '+(thF/DEG).toFixed(1)+'° · innovation '+(innov>=0?'+':'−')+Math.abs(innov).toFixed(2)+'° · magnetic trust '+Math.round(gateF()*100)+'%';
+ else s='Gyro fusion: waiting for RelativeOrientationSensor (unavailable in this browser → absolute sensor only)';
+ s+='<br>Field check vs WMMHR2025: '+(dLvl==null?'n/a (needs Magnetometer API and position)':'ΔF '+(dF>=0?'+':'−')+Math.abs(dF*100).toFixed(1)+'% · Δdip '+(dI>=0?'+':'−')+Math.abs(dI).toFixed(1)+'° · '+['<b class="ok">OK</b>','<b style="color:#e0b04a">WARN</b>','<b class="bad">ANOMALY</b>'][dLvl]);
+ return s+'<br>'+swInfo()}
+/* ===== end v3 ===== */
 function startOri(){
-const fb=()=>{const hdl=ev=>{if(ev.alpha==null||ev.beta==null||ev.gamma==null)return;setQ(qEuler(ev.alpha,ev.beta,ev.gamma))};
+if('RelativeOrientationSensor' in window){try{const r=new RelativeOrientationSensor({frequency:60,referenceFrame:'device'});r.onreading=()=>onRel(Array.from(r.quaternion),performance.now());r.onerror=()=>{qR=null};r.start()}catch(e){}}
+const fb=()=>{const hdl=ev=>{if(ev.alpha==null||ev.beta==null||ev.gamma==null)return;onAbs(qEuler(ev.alpha,ev.beta,ev.gamma),performance.now())};
 if('ondeviceorientationabsolute' in window){window.addEventListener('deviceorientationabsolute',hdl,true);src='deviceorientationabsolute'}
 else{window.addEventListener('deviceorientation',ev=>{if(ev.absolute)hdl(ev)},true);src='deviceorientation (absolute)'}};
 if('AbsoluteOrientationSensor' in window){try{const s=new AbsoluteOrientationSensor({frequency:60,referenceFrame:'device'});
-s.onreading=()=>setQ(Array.from(s.quaternion));s.onerror=()=>{src='fallback';fb()};s.start();src='AbsoluteOrientationSensor';return}catch(e){}}
+s.onreading=()=>onAbs(Array.from(s.quaternion),performance.now());s.onerror=()=>{src='fallback';fb()};s.start();src='AbsoluteOrientationSensor';return}catch(e){}}
 fb()}
 $('go').onclick=()=>{if(run)return;run=true;$('go').textContent='RUNNING';startOri();startMag();
 if(navigator.geolocation)navigator.geolocation.watchPosition(p=>{pos={lat:p.coords.latitude,lon:p.coords.longitude,alt:(p.coords.altitude||0)/1000,acc:p.coords.accuracy,altM:p.coords.altitude}},()=>{},{enableHighAccuracy:true,maximumAge:5000})};
@@ -9263,7 +9326,7 @@ let mag=null,dec=null,fl=null,loc=null,yr=0;
 function frame(t){requestAnimationFrame(frame);loc=pos||man;fl=null;
 if(loc){yr=decYear(new Date());const key=loc.lat.toFixed(4)+loc.lon.toFixed(4)+loc.alt.toFixed(2)+Math.floor(yr*1e5);if(key!=ck){ck=key;cf=WMM.field(loc.lat,loc.lon,loc.alt,yr);const a1=WMM.field(loc.lat,loc.lon,loc.alt,yr-.5),a2=WMM.field(loc.lat,loc.lon,loc.alt,yr+.5);dDdt=((a2.D-a1.D+540)%360-180)*60;const gv=gridConv(loc.lat,loc.lon);gc=gv?gv.g:null;gz=gv?gv.z:'—'}fl=cf}
 dec=fl?fl.D:null;sig=fl?Math.sqrt(.0625+Math.pow(5205/fl.H,2)):null;
-if(q){mag=magHeading(q);hbuf(t,mag);let hd=mag+modeOff();hd=((hd+trim())%360+360)%360;
+if(q){mag=magHeading(q);hbuf(t,mag);let hd=mag+modeOff();hd=((hd+hcorr(mag))%360+360)%360;
  $('hd').firstChild.nodeValue=hd.toFixed(1);$('dir').textContent=W[Math.round(hd/22.5)%16];
  $('dial').setAttribute('transform',`rotate(${(-hd).toFixed(2)})`);
  if(Math.abs(hd-lastTape)>.02){lastTape=hd;tape(hd)}
@@ -9276,10 +9339,10 @@ if(t-lastUi>250){lastUi=t;
  $('m-sig').textContent=sig==null?'—':'±'+(sig>9.99?'>10':sig.toFixed(2))+'°';$('m-stab').textContent=stab==null?'—':'±'+stab.toFixed(2)+'°';
  $('m-sv').textContent=loc&&dDdt!=null?(dDdt>=0?'+':'−')+Math.abs(dDdt).toFixed(1)+'′/yr':'—';$('m-utm').textContent=loc?gz:'—';
  $('m-gc').textContent=loc&&gc!=null?sg(gc,2):'—';$('m-gv').textContent=loc&&dec!=null&&gc!=null?sg(dec-gc,2):'—';
- let s=`Sensor: <b style="color:var(--fg)">${src}</b>`+(q?` · ${useBack?'upright':'flat'} mode`:'')+'<br>'+$('status').dataset.t;
+ let s=`Sensor: <b style="color:var(--fg)">${src}${fuseAct()?' + RelativeOrientationSensor':''}</b>`+(q?` · ${useBack?'upright':'flat'} mode`:'')+'<br>'+$('status').dataset.t;
  if(loc&&yr>=2025&&yr<2030)s+='<br>Model valid for '+(2030-yr).toFixed(1)+' more years (until 2030.0)';if(!window.isSecureContext)s+='<br><b class="bad">Not a secure context — sensors/GPS may be blocked. Serve over HTTPS.</b>';
  if(loc&&(yr<2025||yr>=2030))s+='<br><b class="bad">Outside the WMMHR2025 validity period (2025–2030).</b>';
- $('status').innerHTML=s;renderAlerts()}if(arOn)arDraw()}
+ $('status').innerHTML=s;$('fst').innerHTML=fusStat();$('w-info').innerHTML=swInfo();renderAlerts()}if(arOn)arDraw()}
 
 /* ===== AR LEVEL ===== */
 const ar=$('ar'),vid=$('vid'),cv=$('cv'),cx=cv.getContext('2d'),am=$('a-msg');let arOn=false,stream=null,fov=67,lt=0,rOff=0,pOff=0,tAz=null,tEl=0,showSun=true,cur=null;
@@ -9307,6 +9370,16 @@ $('s-sc').onclick=()=>{if(!cur||!loc)return;const s=sunPos(new Date(),loc.lat,lo
  $('trim').value=m.toFixed(2);sv('trim',m.toFixed(2));
  toast('Heading trim '+m.toFixed(2)+'° from the Sun ('+sunS.length+(sd==null?' sample':' samples, σ '+sd.toFixed(2)+'°')+')')};
 $('s-scr').onclick=()=>{sunS.length=0;toast('Sun calibration samples cleared')};
+$('fuse').checked=fuseOn;$('fuse').onchange=e=>{fuseOn=e.target.checked;thF=null;sv('fuse',fuseOn?1:0)};
+$('swon').checked=swOn;$('swon').onchange=e=>{swOn=e.target.checked;sv('swOn',swOn?1:0)};swFit();
+const swBad=()=>{if(stab==null||stab>1.5){toast('Hold steady first (heading σ '+(stab==null?'n/a':stab.toFixed(1)+'°')+' > 1.5°)');return true}if(dLvl==2){toast('Strong field anomaly: move away from metal first');return true}return false};
+const swDone=(psi,e)=>{swAdd(psi,e);toast('Swing point '+swP.length+': error '+(e>=0?'+':'−')+Math.abs(e).toFixed(2)+'° at '+psi.toFixed(0)+'°')};
+$('w-sun').onclick=()=>{if(!cur||!loc){toast('Need orientation and position first');return}const s=sunPos(new Date(),loc.lat,loc.lon);if(s.el<-1||s.el>75){toast('Sun must be 0–75° above the horizon');return}if(swBad())return;
+ swDone(cur.hdgC,nrm(s.az-(cur.hdgC+(dec||0))))};
+$('w-tgt').onclick=()=>{if(!cur||dec==null||tAz==null){toast('Enter target bearing (and wait for position) first');return}if(swBad())return;
+ const az=tAz+(dec-modeOff());swDone(cur.hdgC,nrm(az-(cur.hdgC+dec)))};
+$('w-undo').onclick=()=>{swP.pop();swSave();swFit();toast('Last swing point removed')};
+$('w-rst').onclick=()=>{if(!swP.length||confirm('Delete all swing points?')){swP=[];swSave();swFit();toast('Swing calibration reset')}};
 const p2=n=>String(n).padStart(2,'0');
 function tstr(d){const u=d.getUTCFullYear()+'-'+p2(d.getUTCMonth()+1)+'-'+p2(d.getUTCDate())+' '+p2(d.getUTCHours())+':'+p2(d.getUTCMinutes())+':'+p2(d.getUTCSeconds()),
  o=-d.getTimezoneOffset(),ao=Math.abs(o),tz=(o>=0?'+':'-')+p2(Math.floor(ao/60))+':'+p2(ao%60),
@@ -9348,13 +9421,13 @@ const DB=(()=>{let p;const open=()=>p||(p=new Promise((res,rej)=>{const r=indexe
 function dl(b,n){const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000)}
 async function sha(buf){try{const h=await crypto.subtle.digest('SHA-256',buf);return[...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('')}catch(e){return null}}
 const n360=v=>((v%360)+360)%360,r2=(v,k)=>v==null?null:+v.toFixed(k);
-function snapshot(){const d=new Date(),T=tstr(d),hc=cur.hdgC,tm=trim(),dc=dec;
+function snapshot(){const d=new Date(),T=tstr(d),hc=cur.hdgC,tm=hcorr(cur.hdgC),dc=dec;
  return{app:'WMMHR Compass 2',model:'WMMHR2025',epochYear:r2(yr,4),utc:d.toISOString(),local:T.l,tz:T.tz,
  lat:loc?r2(loc.lat,6):null,lon:loc?r2(loc.lon,6):null,altM:pos&&pos.altM!=null?r2(pos.altM,1):null,gpsAccM:pos?r2(pos.acc,1):null,posSource:pos?'gps':man?'manual':null,
  mode:modeNm(),hdgShown:r2(n360(hc+modeOff()+tm),2),hdgMag:r2(n360(hc+tm),2),hdgTrue:dc==null?null:r2(n360(hc+dc+tm),2),hdgGrid:dc==null||gc==null?null:r2(n360(hc+dc-gc+tm),2),
  declDeg:r2(dc,3),inclDeg:fl?r2(fl.I,3):null,F_nT:fl?Math.round(fl.F):null,H_nT:fl?Math.round(fl.H):null,gridConvDeg:r2(gc,3),utmZone:loc?gz:null,
  pitchDeg:r2(cur.pitch+pOff,2),rollDeg:r2(cur.roll+rOff,2),trimDeg:tm,rollZero:r2(rOff,2),pitchZero:r2(pOff,2),fovDeg:fov,
- sigmaDeclModelDeg:r2(sig,3),headingStabilityDeg:r2(stab,3),sensor:src,kp:kpOk()?kp.kp:null}}
+ sigmaDeclModelDeg:r2(sig,3),headingStabilityDeg:r2(stab,3),sensor:src,kp:kpOk()?kp.kp:null,fusion:fuseAct(),headingCorr:swOn&&swC?'swing-'+swC.o:'trim',fieldDevPct:dF==null?null:r2(dF*100,1),dipDevDeg:dI==null?null:r2(dI,2)}}
 function stamp(g,W,H,s){const T=tstr(new Date(s.utc)),hf=v=>v==null?'—':v.toFixed(1)+'°',mk=m=>s.mode==m?'*':'',sgn=(v,d)=>v==null?'—':(v>=0?'+':'−')+Math.abs(v).toFixed(d)+'°';
  const L=[['WMMHR COMPASS · '+s.model+' · epoch '+s.epochYear.toFixed(2),'#c9a45c'],
  [T.u+' UTC | '+T.l.slice(0,10).replace(/:/g,'-')+T.l.slice(10)+' (UTC'+s.tz+')'],
@@ -9411,7 +9484,7 @@ a=((screen.orientation&&screen.orientation.angle)||window.orientation||0)%360,an
 const neg=v=>v.map(e=>-e);let Rv,Uv;if(ang==90){Rv=neg(Y);Uv=X}else if(ang==180){Rv=neg(X);Uv=neg(Y)}else if(ang==270){Rv=Y;Uv=neg(X)}else{Rv=X;Uv=Y}
 const F=neg(Zv),dot=(u,v)=>u[0]*v[0]+u[1]*v[1]+u[2]*v[2];
 const hdgC=(Math.atan2(F[0],F[1])/D+360)%360,pitch=Math.asin(Math.max(-1,Math.min(1,F[2])))/D,roll=Math.atan2(-Rv[2],Uv[2])/D;cur={hdgC,pitch,roll};
-const off=modeOff()+trim(),hdg=((hdgC+off)%360+360)%360,pr=pitch+pOff,rr=roll+rOff,ep=pr-lt,er=rr;
+const off=modeOff()+hcorr(hdgC),hdg=((hdgC+off)%360+360)%360,pr=pitch+pOff,rr=roll+rOff,ep=pr-lt,er=rr;
 const f=(Math.max(W,H)/2)/Math.tan(fov*D/2),cxm=W/2,cym=H/2;
 const pj=(az,el)=>{const aa=(az-off)*D,e=el*D,d=[Math.sin(aa)*Math.cos(e),Math.cos(aa)*Math.cos(e),Math.sin(e)],cf=dot(d,F);if(cf<=.03)return null;return[cxm+f*dot(d,Rv)/cf,cym-f*dot(d,Uv)/cf]};
 const ok=Math.abs(er)<=.3&&Math.abs(ep)<=.3,mid=Math.abs(er)<=1&&Math.abs(ep)<=1,col=ok?'#5fb98a':mid?'#e0b04a':'#e2625d';

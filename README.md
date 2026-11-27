@@ -10,6 +10,12 @@ High-precision **true-north compass** and **AR level** for the browser, powered 
 - Heading trim, roll/pitch zeroing and one-tap heading calibration against the Sun
 - Built-in self-test against the official NOAA WMMHR2025 test values (12/12)
 
+## New in v3 (sensor-error reduction, after the Xsens MT0202P magnetic-calibration approach)
+- **Gyro fusion**: `RelativeOrientationSensor` (gyro+accelerometer, immune to magnetic disturbance) is rotated into ENU by a filtered yaw offset θ = yaw(q_abs ⊗ q_rel⁻¹), τ = 6 s (0.5 s for the first 3 s), gain reduced by field anomalies and fast rotation. Falls back to the absolute sensor alone if unavailable.
+- **Field-consistency check against WMMHR2025**: measured |F| and dip (from the Magnetometer API, where exposed) vs model F and I; thresholds in `DIST` (heuristic, tune per device). Anomaly pauses magnetic correction in the fusion and raises an alert.
+- **Swing calibration**: heading-dependent error e(ψ) = a₀ + a₁sinψ + b₁cosψ + a₂sin2ψ + b₂cos2ψ fitted by least squares from Sun/target sightings (offset ≥1 pt, 3-term ≥5 pts, 5-term ≥8 pts with gaps ≤120°); RMS shown; replaces the single trim when active.
+- Metadata adds `fusion`, `headingCorr`, `fieldDevPct`, `dipDevDeg`. Service worker cache `wmmhr-compass-v4`.
+
 ## New in v2.1 (stamp always shows TRUE, MAG and GRID headings; * marks the mode shown)
 
 ## New in v2
