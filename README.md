@@ -10,6 +10,16 @@ High-precision **true-north compass** and **AR level** for the browser, powered 
 - Heading trim, roll/pitch zeroing and one-tap heading calibration against the Sun
 - Built-in self-test against the official NOAA WMMHR2025 test values (12/12)
 
+## New in v3.1
+- **Innovation check (works without the Magnetometer API)**: σ of the abs−rel yaw offset over 5 s (only while rotation < 20°/s) plus the instantaneous deviation. Levels WARN/ANOMALY (`INOV`, heuristic, tune from the log) cut the magnetic gain to 25 % / 5 %; the heading is then held by the gyro.
+- **Rate weighting**: magnetic correction weight (1 − ω/40)², zero above 40°/s; the offset is not initialised while rotating ≥ 20°/s (abs/rel timing skew of ~30 ms would otherwise bias it by ω·lag).
+- **Session log** (LOG START / EXPORT LOG / CLEAR LOG): 5 Hz CSV (`sess,utc,t_s,hdgShown,hdgMagFused,hdgMagAbs,yawOffDeg,yawRawDeg,innovDeg,innovStd5sDeg,omegaDps,gate,iLvl,dLvl,fieldDevPct,dipDevDeg,upright,stabDeg,fps,lat,lon`), flushed every 25 rows to its own IndexedDB, so a killed tab loses at most 5 s. `yawRawDeg` is the yaw of q_abs ⊗ q_rel⁻¹.
+- Gallery CSV and photo metadata add `fusion, headingCorr, fieldDevPct, dipDevDeg, innovStdDeg, anomalyLvl, fps`.
+- Swing info warns when the largest heading gap exceeds 180° (Sun alone cannot cover the compass).
+- Service worker cache `wmmhr-compass-v5`.
+
+**Upload to the repo root (replace existing): `index.html`, `sw.js`, `README.md`.** Icons and manifest are unchanged.
+
 ## New in v3 (sensor-error reduction, after the Xsens MT0202P magnetic-calibration approach)
 - **Gyro fusion**: `RelativeOrientationSensor` (gyro+accelerometer, immune to magnetic disturbance) is rotated into ENU by a filtered yaw offset θ = yaw(q_abs ⊗ q_rel⁻¹), τ = 6 s (0.5 s for the first 3 s), gain reduced by field anomalies and fast rotation. Falls back to the absolute sensor alone if unavailable.
 - **Field-consistency check against WMMHR2025**: measured |F| and dip (from the Magnetometer API, where exposed) vs model F and I; thresholds in `DIST` (heuristic, tune per device). Anomaly pauses magnetic correction in the fusion and raises an alert.
