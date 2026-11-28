@@ -37,7 +37,7 @@ input:focus{border-color:var(--gold)}
 #clino{position:absolute;left:10px;right:10px;bottom:max(64px,calc(env(safe-area-inset-bottom) + 58px));max-height:55vh;overflow:auto;background:rgba(14,18,24,.94);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:12.5px;color:var(--mut);line-height:1.5}#clino[hidden]{display:none}
 #clino label{display:flex;align-items:center;gap:8px;margin:6px 0;color:var(--fg);flex-wrap:wrap}#clino input[type=number]{width:76px;padding:6px 8px}#clino button{padding:9px 6px;font-size:11px}
 .clh{display:flex;align-items:baseline;gap:12px;color:var(--fg)}.clh b{font-size:26px;font-weight:400}.clh span{color:var(--gold);font-weight:600}.clc{display:flex;gap:6px;margin:8px 0 6px}.clc button.on{background:#1d2431;color:var(--gold);border-color:var(--gold)}
-#locp{position:absolute;left:10px;right:10px;bottom:max(64px,calc(env(safe-area-inset-bottom) + 58px));max-height:calc(45vh - 64px);min-height:150px;overflow:auto;background:rgba(14,18,24,.92);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px;padding:8px 12px;font-size:12px;color:var(--mut);line-height:1.4}#locp[hidden]{display:none}.lr{display:flex;gap:6px;margin-top:6px}.lr button{flex:1}.lr input[type=number]{width:62px}.lr span{white-space:nowrap}.lr [hidden]{display:none}
+#locp{position:absolute;left:10px;right:10px;bottom:max(64px,calc(env(safe-area-inset-bottom) + 58px));max-height:calc(45vh - 64px);min-height:150px;overflow:auto;background:rgba(14,18,24,.92);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px;padding:8px 12px;font-size:12px;color:var(--mut);line-height:1.4}#locp[hidden]{display:none}.lr{display:flex;gap:6px;margin-top:6px}.lr button{flex:1}.lr input[type=number]{width:56px}.lr span{white-space:nowrap}.lr [hidden]{display:none}
 #locp input{padding:6px 8px}#locp button{padding:8px 6px;font-size:10.5px}#locp button:disabled{opacity:.4}#locp .clc{margin:6px 0 4px}#locp .clc button{padding:8px 4px;font-size:10px}
 .arbot button{font-size:10px;letter-spacing:.02em;padding-left:2px;padding-right:2px}
 .wr{display:flex;gap:6px;align-items:center;padding:6px 0;border-top:1px solid var(--line);color:var(--fg);font-size:12px}.wr>div{flex:1;min-width:0}.wr span{color:var(--mut);font-size:11px}.wr button{flex:none;padding:6px 9px;font-size:10px;border-radius:9px}#wp-list{max-height:260px;overflow:auto}
@@ -134,8 +134,8 @@ input:focus{border-color:var(--gold)}
 <div id="cl-res" style="margin-top:4px"></div>
 <div class="r2" style="display:flex;gap:8px;margin-top:8px"><button id="cl-clr">CLEAR</button><button id="cl-close">CLOSE</button></div></div>
 <div id="locp" hidden><div class="clh"><b id="lc-live">—</b><span id="lc-live2"></span><small style="margin-left:auto;letter-spacing:.14em">LOCATE</small></div>
-<div class="clc"><button data-m="ground" class="on">GROUND</button><button data-m="height">HEIGHT</button><button data-m="manual">MANUAL</button><button id="lc-go" style="flex:1.2;background:var(--gold);border-color:var(--gold);color:#14110a">MEASURE</button></div>
-<div class="lr" style="align-items:center;color:var(--fg)"><span>Phone h</span><input id="lc-h" type="number" step="0.01" min="0.3" max="3" value="1.5"><span id="lc-H-l" hidden>Object H</span><input id="lc-H" type="number" step="0.1" min="0.1" placeholder="m" hidden><span id="lc-d-l" hidden>Dist</span><input id="lc-d" type="number" step="0.1" min="0" placeholder="m" hidden><span>m</span></div>
+<div class="clc"><button data-m="ground" class="on">GROUND</button><button data-m="height">KNOWN H</button><button data-m="manual">MANUAL</button><button id="lc-go" style="flex:1.2;background:var(--gold);border-color:var(--gold);color:#14110a">MEASURE</button></div>
+<div class="lr" style="align-items:center;color:var(--fg)"><span>Phone h</span><input id="lc-h" type="number" step="0.01" min="0.3" max="3" value="1.5"><span id="lc-H-l" hidden>H</span><input id="lc-H" type="number" step="0.1" min="0.1" placeholder="m" hidden><span id="lc-fl-l" hidden>or floors</span><input id="lc-fl" type="number" step="1" min="1" placeholder="n" hidden><span id="lc-d-l" hidden>Dist</span><input id="lc-d" type="number" step="0.1" min="0" placeholder="m" hidden><span>m</span></div>
 <div id="lc-res" style="margin-top:6px"></div>
 <div class="lr"><input id="lc-n" type="text" placeholder="Waypoint name (optional)" style="flex:1;min-width:0;width:auto"><button id="lc-save" disabled>SAVE</button></div>
 <div class="lr"><button id="lc-tgt" disabled>SET TARGET</button><button id="lc-clr">CLEAR</button><button id="lc-close">CLOSE</button></div></div>
@@ -9583,15 +9583,20 @@ function lcBrg(){return cur&&dec!=null?nrm360(cur.hdgC+hcorr(cur.hdgC)+dec):null
 function lcStart(){if(!cur||!q){toast('Orientation sensor not ready');return}if(dec==null||!loc){toast('Need a position (GPS or manual) first');return}
  if(lcM=='manual'&&!(parseFloat($('lc-d').value)>0)){toast('Enter the distance first');return}
  if(lcM=='height'&&!(parseFloat($('lc-H').value)>0)){toast('Enter the object height first');return}
- lcS={t0:performance.now(),pr:[],b:[]};lcMsg=''}
+ const top=(lcM=='ground'||lcM=='manual')&&lcRes&&!lcRes.ht;if((lcM=='ground'||lcM=='manual')&&lcRes&&lcRes.ht)lcRes=null;lcS={t0:performance.now(),pr:[],b:[],top};lcMsg='';lcRender()}
 function lcFinish(){const s=lcS;lcS=null;const n=s.pr.length,th=clMean(s.pr),spP=Math.max(...s.pr)-Math.min(...s.pr);let C=0,S=0;for(const b of s.b){C+=Math.cos(b*DEG);S+=Math.sin(b*DEG)}
  const R=Math.hypot(C,S)/n,sd=R>=1?0:Math.sqrt(-2*Math.log(R))/DEG,b=nrm360(Math.atan2(S,C)/DEG);
- if(spP>.5||sd>2){lcMsg='Not steady (angle spread '+spP.toFixed(2)+'°, bearing ±'+sd.toFixed(1)+'°) — brace the phone and measure again.';lcRender();return}
+ if(spP>.5||(!s.top&&sd>2)){lcMsg='Not steady (angle spread '+spP.toFixed(2)+'°, bearing ±'+sd.toFixed(1)+'°) — brace the phone and measure again.';lcRender();return}
+ if(s.top){lcTop(th,spP);return}
  const P={th,b,sd,spP};
  if(lcM=='ground'){if(-th<.5){lcMsg='Aim at a point on the GROUND at least 0.5° below the horizon. For far objects use KNOWN HEIGHT or MANUAL.';lcRender();return}lcCompute(P)}
  else if(lcM=='manual')lcCompute(P);
  else if(!lcB){lcB=P;lcMsg='';lcRender()}
  else{if(th<=lcB.th+.3){lcMsg='TOP must be clearly above BASE. Start again.';lcB=null;lcRender();return}lcCompute({th:th,thB:lcB.th,b:lcB.b,sd:Math.max(sd,lcB.sd),spP:Math.max(spP,lcB.spP)});lcB=null}}
+function lcTop(th,spP){const r=lcRes;if(!r||(r.method!='ground'&&r.method!='manual'))return;
+ if(r.dep!=null&&th<=-r.dep+.3){lcMsg='The top must be above the base. Aim at the TOP of the object and measure again.';lcRender();return}
+ const a=th*DEG,sth=Math.sqrt(spP*spP/4+.09)*DEG,H=r.h+r.d*Math.tan(a),sH=Math.hypot(r.d*sth/Math.pow(Math.cos(a),2),Math.tan(a)*r.sr,.05);
+ r.ht={H,sH,th};lcMsg='';lcRender()}
 function lcCompute(P){const h=phoneH(),rad=DEG,sth=Math.sqrt(P.spP*P.spP/4+.09)*rad;let d,sr;
  if(lcM=='ground'){const dep=-P.th*rad;d=h/Math.tan(dep);sr=d*Math.hypot(sth/(Math.sin(dep)*Math.cos(dep)),.05/h)}
  else if(lcM=='height'){const H=parseFloat($('lc-H').value),a=P.th*rad,bb=P.thB*rad,dl=Math.tan(a)-Math.tan(bb);d=H/dl;
@@ -9599,18 +9604,20 @@ function lcCompute(P){const h=phoneH(),rad=DEG,sth=Math.sqrt(P.spP*P.spP/4+.09)*
  else{d=parseFloat($('lc-d').value);sr=Math.max(.02*d,.5)}
  const sb=Math.sqrt(1+P.sd*P.sd+Math.pow(sig||0,2)),sc=d*sb*rad,acc=loc.acc>0?loc.acc:0,tot=2*Math.sqrt(acc*acc+sr*sr+sc*sc),ll=GEO.dir(loc.lat,loc.lon,P.b,d);
  lcRes={lat:ll.lat,lon:ll.lon,d,b:P.b,tot,acc,sr,sc,method:lcM,h,dep:lcM=='ground'?-P.th:null,t:new Date().toISOString(),hasAcc:loc.acc>0};lcMsg='';lcRender()}
-function lcRender(){$('lc-d-l').hidden=$('lc-d').hidden=lcM!='manual';$('lc-H-l').hidden=$('lc-H').hidden=lcM!='height';const L=[];
+function lcRender(){$('lc-d-l').hidden=$('lc-d').hidden=lcM!='manual';$('lc-H-l').hidden=$('lc-H').hidden=$('lc-fl-l').hidden=$('lc-fl').hidden=lcM!='height';const L=[];
  if(lcS)L.push('Measuring…');
  else if(lcM=='height'&&lcB)L.push('BASE saved ('+clA(lcB.th)+'). Now aim at the TOP and tap MEASURE.');
- else if(!lcRes)L.push({ground:'Aim the box at the BASE of the object (where it meets level ground), hold steady, tap MEASURE. The cyan ladder shows ground distance.',height:'1) aim at the BASE, tap MEASURE. 2) aim at the TOP, tap MEASURE again. Needs the object height.',manual:'Aim at the object and tap MEASURE. Distance comes from the field above.'}[lcM]);
+ else if(!lcRes)L.push({ground:'1) Aim the box at the BASE of the object (where it meets level ground), tap MEASURE: distance and coordinates. 2) Then aim at the TOP and tap MEASURE TOP: height. The cyan ladder shows ground distance.',height:'1) aim at the BASE, tap MEASURE. 2) aim at the TOP, tap MEASURE again. Needs the object height (or its floor count, about 3.5 m each).',manual:'Distance comes from the field above (laser, map, paces). Aim at the object and tap MEASURE, then MEASURE TOP aimed at its top for the height.'}[lcM]);
  if(lcRes){const r=lcRes,m=dec!=null?r.b-dec:null;
+  if(r.ht)L.push('<b style="color:var(--gold);font-size:16px">HEIGHT '+r.ht.H.toFixed(1)+' m</b> <span>±'+r.ht.sH.toFixed(1)+' m · top '+clA(r.ht.th)+' above horizon</span>');
+  else if(lcM=='ground'||lcM=='manual')L.push('<span style="color:var(--fg)">Now aim at the TOP of the object and tap MEASURE TOP.</span>');
   L.push('<b style="color:var(--gold);font-size:14px">'+r.lat.toFixed(6)+', '+r.lon.toFixed(6)+'</b>');
   L.push('<span style="color:var(--fg)">'+fmtD(r.d)+' · '+r.b.toFixed(1)+'° T'+(m!=null?' / '+nrm360(m).toFixed(1)+'° M':'')+(r.dep!=null?' · dep '+r.dep.toFixed(1)+'°':'')+' · <b>±'+Math.round(r.tot)+' m</b> (95 %)</span>');
   L.push('<span>GPS ±'+(r.hasAcc?Math.round(r.acc):'?')+' · range ±'+r.sr.toFixed(1)+' · bearing ±'+r.sc.toFixed(1)+' m</span>');
   if(!r.hasAcc)L.push('<span class="bad">GPS accuracy unknown (manual position).</span>');
   if(r.method=='ground'&&r.d>50)L.push('<span class="bad">Ground method: range error grows fast beyond ~50 m. Prefer HEIGHT or MANUAL.</span>')}
  if(lcMsg)L.push('<span style="color:var(--fg)">'+lcMsg+'</span>');
- $('lc-res').innerHTML=L.join('<br>');$('lc-save').disabled=$('lc-tgt').disabled=!lcRes}
+ $('lc-res').innerHTML=L.join('<br>');$('lc-save').disabled=$('lc-tgt').disabled=!lcRes;$('lc-go').textContent=(lcM=='ground'||lcM=='manual')&&lcRes&&!lcRes.ht?'MEASURE TOP':'MEASURE'}
 function lcMark(p,lb,c){cx.save();cx.strokeStyle=c;cx.fillStyle=c;cx.lineWidth=2;cx.beginPath();cx.moveTo(p[0],p[1]-8);cx.lineTo(p[0]+7,p[1]);cx.lineTo(p[0],p[1]+8);cx.lineTo(p[0]-7,p[1]);cx.closePath();cx.stroke();
  cx.lineWidth=1;cx.beginPath();cx.moveTo(p[0],p[1]-9);cx.lineTo(p[0],p[1]-26);cx.stroke();cx.textAlign='left';cx.textBaseline='middle';cx.font='11px system-ui,sans-serif';cx.shadowColor='#000';cx.shadowBlur=4;cx.fillText(lb,p[0]+11,p[1]-18);cx.restore()}
 // called from arDraw every frame
@@ -9627,7 +9634,8 @@ function locFrame(A){const now=performance.now(),open=!$('locp').hidden,h=phoneH
  const brg=lcBrg();
  if(lcS){lcS.pr.push(A.pr);lcS.b.push(brg==null?0:brg);const el=now-lcS.t0;if(el>=900&&lcS.pr.length>=8||el>2500)lcFinish()}
  const dep=-A.pr,dNow=lcM=='ground'&&dep>=.5?h/Math.tan(dep*DEG):null;
- const txt=lcS?'HOLD STEADY… '+Math.max(0,(.9-(now-lcS.t0)/1000)).toFixed(1)+'s':(dNow!=null?'GND '+fmtD(dNow)+'  ·  ':'')+(brg!=null?'BRG '+brg.toFixed(1)+'° T':'ELEV '+clA(A.pr));
+ const topLive=(lcM=='ground'||lcM=='manual')&&lcRes&&!lcRes.ht;
+ const txt=lcS?'HOLD STEADY… '+Math.max(0,(.9-(now-lcS.t0)/1000)).toFixed(1)+'s':topLive?'TOP '+clA(A.pr)+'  →  H '+(lcRes.h+lcRes.d*Math.tan(A.pr*DEG)).toFixed(1)+' m':(dNow!=null?'GND '+fmtD(dNow)+'  ·  ':'')+(brg!=null?'BRG '+brg.toFixed(1)+'° T':'ELEV '+clA(A.pr));
  cx.font='600 14px system-ui,sans-serif';cx.textAlign='center';cx.textBaseline='middle';const w=cx.measureText(txt).width+22,y=A.cym-A.bs-26;
  cx.fillStyle='rgba(11,13,18,.7)';cx.beginPath();cx[cx.roundRect?'roundRect':'rect'](A.cxm-w/2,y-13,w,26,13);cx.fill();cx.fillStyle=lcS?'#e0b04a':'#fff';cx.fillText(txt,A.cxm,y);
  if(now-lcLive>120){lcLive=now;$('lc-live').textContent=brg!=null?brg.toFixed(1)+'° T':'—';$('lc-live2').textContent=dNow!=null?fmtD(dNow):clA(A.pr)}}
@@ -9652,14 +9660,15 @@ $('a-loc').onclick=()=>{const o=$('locp').hidden;$('locp').hidden=!o;if(o){$('sh
 $('lc-close').onclick=()=>{$('locp').hidden=true;lcS=null};
 $('a-clino').addEventListener('click',()=>{if(clinoOn){$('locp').hidden=true;lcS=null}});
 $('a-gear').addEventListener('click',()=>{if(!$('sheet').hidden){$('locp').hidden=true;lcS=null}});
-document.querySelectorAll('#locp .clc button[data-m]').forEach(b=>b.onclick=()=>{lcM=b.dataset.m;lcB=null;lcMsg='';document.querySelectorAll('#locp .clc button[data-m]').forEach(x=>x.classList.toggle('on',x===b));lcRender()});
+document.querySelectorAll('#locp .clc button[data-m]').forEach(b=>b.onclick=()=>{lcM=b.dataset.m;lcB=null;lcRes=null;lcS=null;lcMsg='';document.querySelectorAll('#locp .clc button[data-m]').forEach(x=>x.classList.toggle('on',x===b));lcRender()});
 $('lc-go').onclick=lcStart;
 $('lc-clr').onclick=()=>{lcRes=null;lcB=null;lcS=null;lcMsg='';lcRender()};
-$('lc-save').onclick=()=>{if(!lcRes)return;const r=lcRes;wpAdd({lat:r.lat,lon:r.lon},$('lc-n').value.trim()||null,{note:'located '+fmtD(r.d)+' @ '+r.b.toFixed(1)+'° true ('+r.method+')',unc:Math.round(r.tot)});$('lc-n').value='';toast('Waypoint saved')};
+$('lc-save').onclick=()=>{if(!lcRes)return;const r=lcRes;wpAdd({lat:r.lat,lon:r.lon},$('lc-n').value.trim()||null,{note:'located '+fmtD(r.d)+' @ '+r.b.toFixed(1)+'° true ('+r.method+')'+(r.ht?', height '+r.ht.H.toFixed(1)+' m':''),unc:Math.round(r.tot)});$('lc-n').value='';toast('Waypoint saved')};
 $('lc-tgt').onclick=()=>{if(!lcRes)return;tgtSet({lat:lcRes.lat,lon:lcRes.lon,g:true});$('tg-in').value=lcRes.lat.toFixed(6)+', '+lcRes.lon.toFixed(6);toast('Set as TARGET (radar and AR)')};
 for(const [i,k] of[['lc-h','cl-e'],['lc-H','lc-H'],['lc-d','lc-d']]){const e=$(i);try{const v=localStorage.getItem(k);if(v!=null)e.value=v}catch(x){}
  e.addEventListener('input',()=>{try{localStorage.setItem(k,e.value)}catch(x){}if(i=='lc-h'){$('cl-e').value=e.value;clRender()}lcRes=null;lcB=null;lcRender()})}
 $('cl-e').addEventListener('input',()=>{$('lc-h').value=$('cl-e').value});
+$('lc-fl').addEventListener('input',()=>{const n=parseFloat($('lc-fl').value);if(n>0){$('lc-H').value=(n*3.5).toFixed(1);$('lc-H').dispatchEvent(new Event('input'))}});
 lcRender();wpUi(true);
 
 const camHdg=()=>{const[x,y,z,w]=q;return(Math.atan2(-2*(x*z+y*w),-2*(y*z-x*w))/DEG+360)%360}; // v3.2: same as arDraw hdgC, from the latest q
