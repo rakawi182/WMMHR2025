@@ -10,15 +10,6 @@ High-precision **true-north compass** and **AR level** for the browser, powered 
 - Heading trim, roll/pitch zeroing and one-tap heading calibration against the Sun
 - Built-in self-test against the official NOAA WMMHR2025 test values (12/12)
 
-## New in v3.5 — Point & Locate, waypoints, AR markers
-- **AR LEVEL → LOCATE**: gives the coordinates of the object you aim at. Position (GPS or manual) + true bearing of the crosshair + distance, projected with the WGS84 direct geodesic (Vincenty).
-- **Distance and coordinates**: GROUND (d = h / tan(depression), h = phone height, default 1.5 m; aim at the base of the object on level ground), KNOWN H (d = H / (tan θtop − tan θbase) for an object of known height H, or type the floor count at 3.5 m per floor; measure BASE then TOP), MANUAL (distance typed in, e.g. from a laser, a map or paces). Switching method clears the previous result.
-- **Object height without knowing it**: after a GROUND (or MANUAL) measurement the button becomes MEASURE TOP. Aim at the top of the object: H = h + d·tan(θtop), with its uncertainty. The crosshair shows a live "TOP +55° → H 32 m" estimate. Height error grows with distance because d comes from a small depression angle (about ±2.5 m for a 32 m building measured from 21 m); stay within roughly 30 m of the base, or use MANUAL with a measured distance.
-- **Uncertainty** (≈95 %) = 2·√(GPS² + range² + bearing²), with the three parts listed. The ground method is good up to roughly 50 m with h = 1.5 m (≈ 15 % at 2° depression); absolute accuracy is limited by the GPS fix. Single-face pitch is used, so run ZERO ROLL & PITCH first (or check the sensor offset with the CLINO two-face method).
-- **AR connection**: a cyan ground-distance ladder (2–60 m) on the camera view, a live "GND x m · BRG y° T" readout at the crosshair, a green LOC marker at the located point, amber markers for saved waypoints (nearest 8 within 2 km; toggle in SETTINGS), and SET TARGET puts the TARGET marker on the ground at the right depression angle and shows it on the radar.
-- **Waypoints** (COMPASS tab): save located points or ADD HERE; GO sets a waypoint as target; export GPX, KML or GeoJSON (uncertainty and method are kept in the note).
-- Service worker cache `wmmhr-compass-v9`.
-
 ## New in v3.4 — Clinometer (AR LEVEL → CLINO)
 - Aim the box at a point: live elevation angle and grade (%). **MEASURE** averages 0.9 s of readings and rejects an unsteady hold (spread > 0.5°).
 - **Slots**: ANGLE (slope: angle, grade, 1:n, rise and slope length if a distance is entered), TOP and BASE (object height = d·(tan θtop − tan θbase); with TOP only, height = d·tan θtop + eye height). *d is the horizontal distance.*
