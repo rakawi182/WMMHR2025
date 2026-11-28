@@ -37,6 +37,10 @@ input:focus{border-color:var(--gold)}
 #clino{position:absolute;left:10px;right:10px;bottom:max(64px,calc(env(safe-area-inset-bottom) + 58px));max-height:55vh;overflow:auto;background:rgba(14,18,24,.94);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:12.5px;color:var(--mut);line-height:1.5}#clino[hidden]{display:none}
 #clino label{display:flex;align-items:center;gap:8px;margin:6px 0;color:var(--fg);flex-wrap:wrap}#clino input[type=number]{width:76px;padding:6px 8px}#clino button{padding:9px 6px;font-size:11px}
 .clh{display:flex;align-items:baseline;gap:12px;color:var(--fg)}.clh b{font-size:26px;font-weight:400}.clh span{color:var(--gold);font-weight:600}.clc{display:flex;gap:6px;margin:8px 0 6px}.clc button.on{background:#1d2431;color:var(--gold);border-color:var(--gold)}
+#locp{position:absolute;left:10px;right:10px;bottom:max(64px,calc(env(safe-area-inset-bottom) + 58px));max-height:calc(45vh - 64px);min-height:150px;overflow:auto;background:rgba(14,18,24,.92);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px;padding:8px 12px;font-size:12px;color:var(--mut);line-height:1.4}#locp[hidden]{display:none}.lr{display:flex;gap:6px;margin-top:6px}.lr button{flex:1}.lr input[type=number]{width:62px}.lr span{white-space:nowrap}.lr [hidden]{display:none}
+#locp input{padding:6px 8px}#locp button{padding:8px 6px;font-size:10.5px}#locp button:disabled{opacity:.4}#locp .clc{margin:6px 0 4px}#locp .clc button{padding:8px 4px;font-size:10px}
+.arbot button{font-size:10px;letter-spacing:.02em;padding-left:2px;padding-right:2px}
+.wr{display:flex;gap:6px;align-items:center;padding:6px 0;border-top:1px solid var(--line);color:var(--fg);font-size:12px}.wr>div{flex:1;min-width:0}.wr span{color:var(--mut);font-size:11px}.wr button{flex:none;padding:6px 9px;font-size:10px;border-radius:9px}#wp-list{max-height:260px;overflow:auto}
 #tg-cv{width:100%;aspect-ratio:1/1;display:block;margin-top:8px;border-radius:12px;background:#0b0d12;touch-action:manipulation}
 .tgm{margin-top:8px}.tgm .m b{font-size:14px}
 
@@ -98,6 +102,9 @@ input:focus{border-color:var(--gold)}
 <div class="m" style="grid-column:span 2"><small>Bearing uncertainty (GPS ÷ distance)</small><b id="tg-s">—</b></div></section>
 <div id="tg-i" style="margin-top:6px;line-height:1.5">—</div>
 <div style="margin-top:4px">The bearing also drives the TARGET marker in AR LEVEL (overrides the typed azimuth). Elevation stays as typed there.</div></section>
+<section class="card" id="wpc"><div class="ttl">WAYPOINTS</div>
+<div class="tgb"><button id="wp-here">ADD HERE</button><button id="wp-gpx">GPX</button><button id="wp-kml">KML</button><button id="wp-geo">GEOJSON</button></div>
+<div id="wp-list" style="margin-top:6px"></div></section>
 <section class="card"><label>Manual position <input id="mlat" placeholder="Latitude"> <input id="mlon" placeholder="Longitude"> <button id="mset" style="flex:none;padding:7px 12px">Set</button></label></section>
 <section class="card" id="status">—</section>
 <div id="ar" hidden>
@@ -110,6 +117,7 @@ input:focus{border-color:var(--gold)}
 <label>Camera FOV, long side <input id="s-fov" type="range" min="40" max="110" step="0.5"><b id="s-fovv" style="color:var(--fg)">67°</b></label>
 <label>Level target pitch (°) <input id="s-lt" type="number" step="0.1" value="0"></label>
 <label>Target bearing (°) <input id="s-ta" type="number" step="0.1" placeholder="az"> elev <input id="s-te" type="number" step="0.1" placeholder="el"></label>
+<label><input id="s-wp" type="checkbox" checked> Show waypoints (nearest 8, within 2 km)</label>
 <label><input id="s-sun" type="checkbox" checked> Show Sun marker</label><label><input id="s-auto" type="checkbox"> Auto-capture when level &amp; steady (1.2 s)</label><label><input id="s-dl" type="checkbox" checked> Also download the JPEG on capture</label>
 <div class="r2"><button id="s-zero">ZERO ROLL &amp; PITCH</button><button id="s-rz">RESET ZERO</button></div>
 <div class="r2"><button id="s-sc">CALIBRATE HEADING TO SUN</button><button id="s-scr">RESET SUN CAL</button></div>
@@ -125,7 +133,13 @@ input:focus{border-color:var(--gold)}
 <label>Distance <input id="cl-d" type="number" step="0.1" min="0" placeholder="m"> Eye height <input id="cl-e" type="number" step="0.01" min="0" value="1.5"></label>
 <div id="cl-res" style="margin-top:4px"></div>
 <div class="r2" style="display:flex;gap:8px;margin-top:8px"><button id="cl-clr">CLEAR</button><button id="cl-close">CLOSE</button></div></div>
-<div class="arbot"><button id="a-cap">CAPTURE</button><button id="a-gal">GALLERY</button><button id="a-clino">CLINO</button><button id="a-gear">SETTINGS</button></div>
+<div id="locp" hidden><div class="clh"><b id="lc-live">—</b><span id="lc-live2"></span><small style="margin-left:auto;letter-spacing:.14em">LOCATE</small></div>
+<div class="clc"><button data-m="ground" class="on">GROUND</button><button data-m="height">HEIGHT</button><button data-m="manual">MANUAL</button><button id="lc-go" style="flex:1.2;background:var(--gold);border-color:var(--gold);color:#14110a">MEASURE</button></div>
+<div class="lr" style="align-items:center;color:var(--fg)"><span>Phone h</span><input id="lc-h" type="number" step="0.01" min="0.3" max="3" value="1.5"><span id="lc-H-l" hidden>Object H</span><input id="lc-H" type="number" step="0.1" min="0.1" placeholder="m" hidden><span id="lc-d-l" hidden>Dist</span><input id="lc-d" type="number" step="0.1" min="0" placeholder="m" hidden><span>m</span></div>
+<div id="lc-res" style="margin-top:6px"></div>
+<div class="lr"><input id="lc-n" type="text" placeholder="Waypoint name (optional)" style="flex:1;min-width:0;width:auto"><button id="lc-save" disabled>SAVE</button></div>
+<div class="lr"><button id="lc-tgt" disabled>SET TARGET</button><button id="lc-clr">CLEAR</button><button id="lc-close">CLOSE</button></div></div>
+<div class="arbot"><button id="a-cap">CAPTURE</button><button id="a-gal">GALLERY</button><button id="a-clino">CLINO</button><button id="a-loc">LOCATE</button><button id="a-gear">SETTINGS</button></div>
 </div>
 <div id="gal" hidden><div class="gh"><b>GALLERY</b><span id="gal-n"></span><div class="gb"><button id="gal-csv">CSV</button><button id="gal-geo">GEOJSON</button><button id="gal-kml">KML</button><button id="gal-x">CLOSE</button></div></div><div id="gal-list"></div></div>
 <div id="toast" hidden></div>
@@ -9390,7 +9404,7 @@ if(t-lastUi>(arOn?1000:250)){lastUi=t;if(arOn)$('w-info').innerHTML=swInfo();els
  let s=`Sensor: <b style="color:var(--fg)">${src}${fuseAct()?' + RelativeOrientationSensor':''}</b>`+(q?` · ${useBack?'upright':'flat'} mode`:'')+'<br>'+$('status').dataset.t;
  if(loc&&yr>=2025&&yr<2030)s+='<br>Model valid for '+(2030-yr).toFixed(1)+' more years (until 2030.0)';if(!window.isSecureContext)s+='<br><b class="bad">Not a secure context — sensors/GPS may be blocked. Serve over HTTPS.</b>';
  if(loc&&(yr<2025||yr>=2030))s+='<br><b class="bad">Outside the WMMHR2025 validity period (2025–2030).</b>';
- $('status').innerHTML=s;$('fst').innerHTML=fusStat();$('lgi').textContent=logInfo();$('w-info').innerHTML=swInfo();renderAlerts();tgtUi()}}if(arOn)arDraw();else if(typeof radDraw==='function')radDraw(t)}
+ $('status').innerHTML=s;$('fst').innerHTML=fusStat();$('lgi').textContent=logInfo();$('w-info').innerHTML=swInfo();renderAlerts();tgtUi();wpUi()}}if(arOn)arDraw();else if(typeof radDraw==='function')radDraw(t)}
 
 /* ===== v3.3: geodesic (WGS84 Vincenty inverse), coordinate parser ===== */
 const GEO={a:6378137,f:1/298.257223563,
@@ -9410,6 +9424,10 @@ inv(lat1,lon1,lat2,lon2){const D=Math.PI/180,a=this.a,f=this.f,b=a*(1-f);
  sl=Math.sin(lam),cl=Math.cos(lam),
  az1=Math.atan2(cU2*sl,cU1*sU2-sU1*cU2*cl),az2=Math.atan2(cU1*sl,-sU1*cU2+cU1*sU2*cl);
  return{s,az1:(az1/D+360)%360,az2:(az2/D+360)%360,ok:true}},
+dir(lat1,lon1,az,s){const D=Math.PI/180,a=this.a,f=this.f,b=a*(1-f),al=az*D,sA=Math.sin(al),cA=Math.cos(al),tU=(1-f)*Math.tan(lat1*D),cU=1/Math.sqrt(1+tU*tU),sU=tU*cU,sg1=Math.atan2(tU,cA),sAl=cU*sA,c2=1-sAl*sAl,u2=c2*(a*a-b*b)/(b*b),A=1+u2/16384*(4096+u2*(-768+u2*(320-175*u2))),B=u2/1024*(256+u2*(-128+u2*(74-47*u2)));
+ let sg=s/(b*A),sp,it=0,c2m,sS,cS;do{c2m=Math.cos(2*sg1+sg);sS=Math.sin(sg);cS=Math.cos(sg);const ds=B*sS*(c2m+B/4*(cS*(-1+2*c2m*c2m)-B/6*c2m*(-3+4*sS*sS)*(-3+4*c2m*c2m)));sp=sg;sg=s/(b*A)+ds}while(Math.abs(sg-sp)>1e-12&&++it<100);
+ const tm=sU*sS-cU*cS*cA,la2=Math.atan2(sU*cS+cU*sS*cA,(1-f)*Math.hypot(sAl,tm)),lam=Math.atan2(sS*sA,cU*cS-sU*sS*cA),C=f/16*c2*(4+f*(4-3*c2)),L=lam-(1-C)*f*sAl*(sg+C*sS*(c2m+C*cS*(-1+2*c2m*c2m)));
+ return{lat:la2/D,lon:((lon1+L/D)+540)%360-180}},
 sph(lat1,lon1,lat2,lon2){const D=Math.PI/180,R=6371008.8,p1=lat1*D,p2=lat2*D,dl=(lon2-lon1)*D,dp=p2-p1,
  h=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2,s=2*R*Math.asin(Math.min(1,Math.sqrt(h))),
  az1=Math.atan2(Math.sin(dl)*Math.cos(p2),Math.cos(p1)*Math.sin(p2)-Math.sin(p1)*Math.cos(p2)*Math.cos(dl));
@@ -9443,6 +9461,7 @@ function tgtSync(){
  tgtD=tgtG.s;tgtBt=tgtG.az1;
  if(tgtBt==null){tAz=null;return}
  tAz=nrm360(tgtBt-(dec!=null?dec-modeOff():0));
+ tEl=tLL.g&&tgtD>0?-Math.atan(phoneH()/tgtD)/DEG:(parseFloat($('s-te').value)||0);
  const e=$('s-ta');if(e&&document.activeElement!==e){const v=tAz.toFixed(1);if(e.value!==v)e.value=v}
 }
 function tgtUi(){
@@ -9468,7 +9487,7 @@ function tgtSet(ll){tLL=ll;tgtK='';saveT();tgtSync();tgtUi();radDraw(performance
 $('tg-set').onclick=()=>{const p=parseLL($('tg-in').value);if(!p){toast('Not recognised. Example: -6.2088, 106.8456');return}tgtSet(p);$('tg-in').value=p.lat.toFixed(6)+', '+p.lon.toFixed(6);toast('Target set')};
 $('tg-in').addEventListener('keydown',e=>{if(e.key==='Enter')$('tg-set').click()});
 $('tg-here').onclick=()=>{if(!loc){toast('Waiting for your position first');return}tgtSet({lat:loc.lat,lon:loc.lon});$('tg-in').value=loc.lat.toFixed(6)+', '+loc.lon.toFixed(6);toast('Current position marked as target')};
-$('tg-clr').onclick=()=>{tLL=null;tAz=null;tgtD=tgtBt=null;tgtG=null;$('tg-in').value='';$('s-ta').value='';saveT();tgtUi();radDraw(performance.now(),true)};
+$('tg-clr').onclick=()=>{tLL=null;tAz=null;tEl=parseFloat($('s-te').value)||0;tgtD=tgtBt=null;tgtG=null;$('tg-in').value='';$('s-ta').value='';saveT();tgtUi();radDraw(performance.now(),true)};
 $('tg-map').onclick=()=>{if(!tLL)return;const a=tLL.lat.toFixed(6),o=tLL.lon.toFixed(6);
  location.href=/Android/i.test(navigator.userAgent)?`geo:${a},${o}?q=${a},${o}(Target)`:/iPhone|iPad/i.test(navigator.userAgent)?`https://maps.apple.com/?ll=${a},${o}&q=Target`:`https://www.openstreetmap.org/?mlat=${a}&mlon=${o}#map=15/${a}/${o}`};
 if(tLL)$('tg-in').value=tLL.lat.toFixed(6)+', '+tLL.lon.toFixed(6);
@@ -9553,6 +9572,95 @@ $('cl-clr').onclick=()=>{clV={ang:null,top:null,base:null};clPend=null;clS=null;
 try{const v=localStorage.getItem('cl-2f');if(v!=null)$('cl-2f').checked=v=='1'}catch(e){}
 $('cl-2f').onchange=()=>{try{localStorage.setItem('cl-2f',$('cl-2f').checked?1:0)}catch(e){}clPend=null;clMsg='';clRender()};
 clRender();
+
+/* ===== v3.5: Point & Locate (coordinates of a sighted object) + waypoints + AR markers ===== */
+const hx=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let lcM='ground',lcS=null,lcB=null,lcRes=null,lcMsg='',lcLive=0,wps=[],wpLast='',wpT=0;
+try{wps=JSON.parse(localStorage.getItem('wps'))||[]}catch(e){}
+function phoneH(){const v=parseFloat($('lc-h').value);return v>.2&&v<3?v:1.5}
+const saveWp=()=>{try{localStorage.setItem('wps',JSON.stringify(wps))}catch(e){}};
+function lcBrg(){return cur&&dec!=null?nrm360(cur.hdgC+hcorr(cur.hdgC)+dec):null}
+function lcStart(){if(!cur||!q){toast('Orientation sensor not ready');return}if(dec==null||!loc){toast('Need a position (GPS or manual) first');return}
+ if(lcM=='manual'&&!(parseFloat($('lc-d').value)>0)){toast('Enter the distance first');return}
+ if(lcM=='height'&&!(parseFloat($('lc-H').value)>0)){toast('Enter the object height first');return}
+ lcS={t0:performance.now(),pr:[],b:[]};lcMsg=''}
+function lcFinish(){const s=lcS;lcS=null;const n=s.pr.length,th=clMean(s.pr),spP=Math.max(...s.pr)-Math.min(...s.pr);let C=0,S=0;for(const b of s.b){C+=Math.cos(b*DEG);S+=Math.sin(b*DEG)}
+ const R=Math.hypot(C,S)/n,sd=R>=1?0:Math.sqrt(-2*Math.log(R))/DEG,b=nrm360(Math.atan2(S,C)/DEG);
+ if(spP>.5||sd>2){lcMsg='Not steady (angle spread '+spP.toFixed(2)+'°, bearing ±'+sd.toFixed(1)+'°) — brace the phone and measure again.';lcRender();return}
+ const P={th,b,sd,spP};
+ if(lcM=='ground'){if(-th<.5){lcMsg='Aim at a point on the GROUND at least 0.5° below the horizon. For far objects use KNOWN HEIGHT or MANUAL.';lcRender();return}lcCompute(P)}
+ else if(lcM=='manual')lcCompute(P);
+ else if(!lcB){lcB=P;lcMsg='';lcRender()}
+ else{if(th<=lcB.th+.3){lcMsg='TOP must be clearly above BASE. Start again.';lcB=null;lcRender();return}lcCompute({th:th,thB:lcB.th,b:lcB.b,sd:Math.max(sd,lcB.sd),spP:Math.max(spP,lcB.spP)});lcB=null}}
+function lcCompute(P){const h=phoneH(),rad=DEG,sth=Math.sqrt(P.spP*P.spP/4+.09)*rad;let d,sr;
+ if(lcM=='ground'){const dep=-P.th*rad;d=h/Math.tan(dep);sr=d*Math.hypot(sth/(Math.sin(dep)*Math.cos(dep)),.05/h)}
+ else if(lcM=='height'){const H=parseFloat($('lc-H').value),a=P.th*rad,bb=P.thB*rad,dl=Math.tan(a)-Math.tan(bb);d=H/dl;
+  sr=d*Math.hypot(sth*Math.hypot(1/Math.pow(Math.cos(a),2),1/Math.pow(Math.cos(bb),2))/dl,.03)}
+ else{d=parseFloat($('lc-d').value);sr=Math.max(.02*d,.5)}
+ const sb=Math.sqrt(1+P.sd*P.sd+Math.pow(sig||0,2)),sc=d*sb*rad,acc=loc.acc>0?loc.acc:0,tot=2*Math.sqrt(acc*acc+sr*sr+sc*sc),ll=GEO.dir(loc.lat,loc.lon,P.b,d);
+ lcRes={lat:ll.lat,lon:ll.lon,d,b:P.b,tot,acc,sr,sc,method:lcM,h,dep:lcM=='ground'?-P.th:null,t:new Date().toISOString(),hasAcc:loc.acc>0};lcMsg='';lcRender()}
+function lcRender(){$('lc-d-l').hidden=$('lc-d').hidden=lcM!='manual';$('lc-H-l').hidden=$('lc-H').hidden=lcM!='height';const L=[];
+ if(lcS)L.push('Measuring…');
+ else if(lcM=='height'&&lcB)L.push('BASE saved ('+clA(lcB.th)+'). Now aim at the TOP and tap MEASURE.');
+ else if(!lcRes)L.push({ground:'Aim the box at the BASE of the object (where it meets level ground), hold steady, tap MEASURE. The cyan ladder shows ground distance.',height:'1) aim at the BASE, tap MEASURE. 2) aim at the TOP, tap MEASURE again. Needs the object height.',manual:'Aim at the object and tap MEASURE. Distance comes from the field above.'}[lcM]);
+ if(lcRes){const r=lcRes,m=dec!=null?r.b-dec:null;
+  L.push('<b style="color:var(--gold);font-size:14px">'+r.lat.toFixed(6)+', '+r.lon.toFixed(6)+'</b>');
+  L.push('<span style="color:var(--fg)">'+fmtD(r.d)+' · '+r.b.toFixed(1)+'° T'+(m!=null?' / '+nrm360(m).toFixed(1)+'° M':'')+(r.dep!=null?' · dep '+r.dep.toFixed(1)+'°':'')+' · <b>±'+Math.round(r.tot)+' m</b> (95 %)</span>');
+  L.push('<span>GPS ±'+(r.hasAcc?Math.round(r.acc):'?')+' · range ±'+r.sr.toFixed(1)+' · bearing ±'+r.sc.toFixed(1)+' m</span>');
+  if(!r.hasAcc)L.push('<span class="bad">GPS accuracy unknown (manual position).</span>');
+  if(r.method=='ground'&&r.d>50)L.push('<span class="bad">Ground method: range error grows fast beyond ~50 m. Prefer HEIGHT or MANUAL.</span>')}
+ if(lcMsg)L.push('<span style="color:var(--fg)">'+lcMsg+'</span>');
+ $('lc-res').innerHTML=L.join('<br>');$('lc-save').disabled=$('lc-tgt').disabled=!lcRes}
+function lcMark(p,lb,c){cx.save();cx.strokeStyle=c;cx.fillStyle=c;cx.lineWidth=2;cx.beginPath();cx.moveTo(p[0],p[1]-8);cx.lineTo(p[0]+7,p[1]);cx.lineTo(p[0],p[1]+8);cx.lineTo(p[0]-7,p[1]);cx.closePath();cx.stroke();
+ cx.lineWidth=1;cx.beginPath();cx.moveTo(p[0],p[1]-9);cx.lineTo(p[0],p[1]-26);cx.stroke();cx.textAlign='left';cx.textBaseline='middle';cx.font='11px system-ui,sans-serif';cx.shadowColor='#000';cx.shadowBlur=4;cx.fillText(lb,p[0]+11,p[1]-18);cx.restore()}
+// called from arDraw every frame
+function locFrame(A){const now=performance.now(),open=!$('locp').hidden,h=phoneH(),eo=pOff;
+ if(loc&&dec!=null){const off=dec-modeOff(),it=[];
+  if($('s-wp').checked)for(const w of wps){const g=GEO.inv(loc.lat,loc.lon,w.lat,w.lon);if(g.az1!=null&&g.s>=1&&g.s<=2000)it.push({n:w.n,d:g.s,az:g.az1,c:'#e2a14a'})}
+  it.sort((a,b)=>a.d-b.d);it.length=Math.min(it.length,8);
+  if(lcRes&&!wps.some(w=>Math.abs(w.lat-lcRes.lat)<2e-6&&Math.abs(w.lon-lcRes.lon)<2e-6)){const g=GEO.inv(loc.lat,loc.lon,lcRes.lat,lcRes.lon);if(g.az1!=null&&g.s>=.5)it.push({n:'LOC',d:g.s,az:g.az1,c:'#5fb98a'})}
+  for(const o of it){const p=A.pj(nrm360(o.az-off),-Math.atan(h/o.d)/DEG-eo);if(p&&p[0]>8&&p[0]<A.W-8&&p[1]>30&&p[1]<A.H-8)lcMark(p,o.n+' '+fmtD(o.d),o.c)}}
+ if(!open)return;
+ if(lcM=='ground'){cx.save();cx.lineWidth=1;cx.font='10px system-ui,sans-serif';cx.textBaseline='middle';
+  for(const dd of[2,3,5,8,12,20,35,60]){const el=-Math.atan(h/dd)/DEG-eo,a=A.pj(A.hdg-18,el),m=A.pj(A.hdg,el),z=A.pj(A.hdg+18,el);if(!a||!m||!z)continue;
+   cx.strokeStyle='rgba(89,183,240,.75)';cx.fillStyle='rgba(160,215,250,.95)';cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(m[0],m[1]);cx.lineTo(z[0],z[1]);cx.stroke();cx.textAlign='left';cx.fillText(dd+' m',z[0]+4,z[1])}cx.restore()}
+ const brg=lcBrg();
+ if(lcS){lcS.pr.push(A.pr);lcS.b.push(brg==null?0:brg);const el=now-lcS.t0;if(el>=900&&lcS.pr.length>=8||el>2500)lcFinish()}
+ const dep=-A.pr,dNow=lcM=='ground'&&dep>=.5?h/Math.tan(dep*DEG):null;
+ const txt=lcS?'HOLD STEADY… '+Math.max(0,(.9-(now-lcS.t0)/1000)).toFixed(1)+'s':(dNow!=null?'GND '+fmtD(dNow)+'  ·  ':'')+(brg!=null?'BRG '+brg.toFixed(1)+'° T':'ELEV '+clA(A.pr));
+ cx.font='600 14px system-ui,sans-serif';cx.textAlign='center';cx.textBaseline='middle';const w=cx.measureText(txt).width+22,y=A.cym-A.bs-26;
+ cx.fillStyle='rgba(11,13,18,.7)';cx.beginPath();cx[cx.roundRect?'roundRect':'rect'](A.cxm-w/2,y-13,w,26,13);cx.fill();cx.fillStyle=lcS?'#e0b04a':'#fff';cx.fillText(txt,A.cxm,y);
+ if(now-lcLive>120){lcLive=now;$('lc-live').textContent=brg!=null?brg.toFixed(1)+'° T':'—';$('lc-live2').textContent=dNow!=null?fmtD(dNow):clA(A.pr)}}
+/* --- waypoints --- */
+function wpAdd(ll,name,meta){wps.push(Object.assign({n:(name||'WP '+(wps.length+1)).slice(0,40),lat:+ll.lat.toFixed(6),lon:+ll.lon.toFixed(6),t:new Date().toISOString()},meta||{}));saveWp();wpUi(true)}
+function wpUi(force){const now=Date.now();if(!force&&now-wpT<1000)return;wpT=now;
+ const h=wps.length?wps.map((w,i)=>{let ds='';if(loc){const g=GEO.inv(loc.lat,loc.lon,w.lat,w.lon);ds=' · '+fmtD(g.s)+(g.az1!=null?' · '+fmtB(g.az1-(dec!=null?dec-modeOff():0)):'')}
+  return '<div class="wr"><div><b>'+hx(w.n)+'</b><br><span>'+w.lat.toFixed(5)+', '+w.lon.toFixed(5)+ds+'</span></div><button data-a="go" data-i="'+i+'">GO</button><button data-a="del" data-i="'+i+'">DEL</button></div>'}).join(''):'<span>No waypoints yet. Use ADD HERE, or LOCATE in AR LEVEL.</span>';
+ if(h!==wpLast){wpLast=h;$('wp-list').innerHTML=h}}
+function wpExport(k){if(!wps.length){toast('No waypoints to export');return}const x=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');let t,m,f;
+ if(k=='gpx'){t='<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="WMMHR Compass" xmlns="http://www.topografix.com/GPX/1/1">\n'+wps.map(w=>'<wpt lat="'+w.lat+'" lon="'+w.lon+'"><time>'+w.t+'</time><name>'+x(w.n)+'</name>'+(w.note?'<desc>'+x(w.note)+'</desc>':'')+'</wpt>').join('\n')+'\n</gpx>';m='application/gpx+xml';f='wmmhr_waypoints.gpx'}
+ else if(k=='kml'){t='<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document>\n'+wps.map(w=>'<Placemark><name>'+x(w.n)+'</name>'+(w.note?'<description>'+x(w.note)+'</description>':'')+'<Point><coordinates>'+w.lon+','+w.lat+',0</coordinates></Point></Placemark>').join('\n')+'\n</Document></kml>';m='application/vnd.google-earth.kml+xml';f='wmmhr_waypoints.kml'}
+ else{t=JSON.stringify({type:'FeatureCollection',features:wps.map(w=>({type:'Feature',geometry:{type:'Point',coordinates:[w.lon,w.lat]},properties:{name:w.n,time:w.t,note:w.note||null,uncertainty_m:w.unc||null}}))},null,1);m='application/geo+json';f='wmmhr_waypoints.geojson'}
+ dl(new Blob([t],{type:m}),f)}
+$('wp-list').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const i=+b.dataset.i,w=wps[i];if(!w)return;
+ if(b.dataset.a=='del'){wps.splice(i,1);saveWp();wpUi(true)}
+ else{tgtSet({lat:w.lat,lon:w.lon,g:true});$('tg-in').value=w.lat.toFixed(6)+', '+w.lon.toFixed(6);toast('Target: '+w.n+' (radar and AR)')}});
+$('wp-here').onclick=()=>{if(!loc){toast('Waiting for your position first');return}wpAdd({lat:loc.lat,lon:loc.lon},null,{note:'marked here',unc:loc.acc>0?Math.round(loc.acc):null})};
+$('wp-gpx').onclick=()=>wpExport('gpx');$('wp-kml').onclick=()=>wpExport('kml');$('wp-geo').onclick=()=>wpExport('geo');
+/* --- locate panel wiring --- */
+$('a-loc').onclick=()=>{const o=$('locp').hidden;$('locp').hidden=!o;if(o){$('sheet').hidden=true;$('clino').hidden=true;clinoOn=false;clS=null;lcRender()}else lcS=null};
+$('lc-close').onclick=()=>{$('locp').hidden=true;lcS=null};
+$('a-clino').addEventListener('click',()=>{if(clinoOn){$('locp').hidden=true;lcS=null}});
+$('a-gear').addEventListener('click',()=>{if(!$('sheet').hidden){$('locp').hidden=true;lcS=null}});
+document.querySelectorAll('#locp .clc button[data-m]').forEach(b=>b.onclick=()=>{lcM=b.dataset.m;lcB=null;lcMsg='';document.querySelectorAll('#locp .clc button[data-m]').forEach(x=>x.classList.toggle('on',x===b));lcRender()});
+$('lc-go').onclick=lcStart;
+$('lc-clr').onclick=()=>{lcRes=null;lcB=null;lcS=null;lcMsg='';lcRender()};
+$('lc-save').onclick=()=>{if(!lcRes)return;const r=lcRes;wpAdd({lat:r.lat,lon:r.lon},$('lc-n').value.trim()||null,{note:'located '+fmtD(r.d)+' @ '+r.b.toFixed(1)+'° true ('+r.method+')',unc:Math.round(r.tot)});$('lc-n').value='';toast('Waypoint saved')};
+$('lc-tgt').onclick=()=>{if(!lcRes)return;tgtSet({lat:lcRes.lat,lon:lcRes.lon,g:true});$('tg-in').value=lcRes.lat.toFixed(6)+', '+lcRes.lon.toFixed(6);toast('Set as TARGET (radar and AR)')};
+for(const [i,k] of[['lc-h','cl-e'],['lc-H','lc-H'],['lc-d','lc-d']]){const e=$(i);try{const v=localStorage.getItem(k);if(v!=null)e.value=v}catch(x){}
+ e.addEventListener('input',()=>{try{localStorage.setItem(k,e.value)}catch(x){}if(i=='lc-h'){$('cl-e').value=e.value;clRender()}lcRes=null;lcB=null;lcRender()})}
+$('cl-e').addEventListener('input',()=>{$('lc-h').value=$('cl-e').value});
+lcRender();wpUi(true);
 
 const camHdg=()=>{const[x,y,z,w]=q;return(Math.atan2(-2*(x*z+y*w),-2*(y*z-x*w))/DEG+360)%360}; // v3.2: same as arDraw hdgC, from the latest q
 const D=Math.PI/180,ld=(k,d)=>{try{const v=parseFloat(localStorage.getItem(k));return isFinite(v)?v:d}catch(e){return d}},sv=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
@@ -9734,7 +9842,7 @@ for(let i=-12;i<=12;i++){const u=i/2,len=i%2==0?9:5;cx.lineWidth=i==0?2:1;cx.beg
  if(i%4==0&&i){cx.fillStyle='#aeb7c6';cx.fillText(Math.abs(u)+'',cxm+u*20,gy+10);cx.fillText(Math.abs(u)+'',gx+11,cym-u*20)}}
 cx.fillStyle=col;const gxp=cxm+Math.max(-6.4,Math.min(6.4,er))*20,gyp=cym-Math.max(-6.4,Math.min(6.4,ep))*20;
 cx.beginPath();cx.moveTo(gxp,gy+2);cx.lineTo(gxp-6,gy+12);cx.lineTo(gxp+6,gy+12);cx.fill();cx.beginPath();cx.moveTo(gx+2,gyp);cx.lineTo(gx+12,gyp-6);cx.lineTo(gx+12,gyp+6);cx.fill();
-clinoFrame(pitch,pr,cxm,cym,bs);
+clinoFrame(pitch,pr,cxm,cym,bs);locFrame({pitch,pr,pj,hdg,cxm,cym,bs,W,H});
 // HTML readouts
 const sg2=v=>(v>=0?'+':'−')+Math.abs(v).toFixed(1)+'°';
 $('a-p').textContent=sg2(pr);$('a-r').textContent=sg2(rr);$('a-h').textContent=hdg.toFixed(1)+'°';$('a-hl').textContent=modeI==1?'HDG MAG':dec!=null?'HDG '+modeNm():'HDG MAG*';
